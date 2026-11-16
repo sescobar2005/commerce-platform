@@ -1,146 +1,196 @@
 # ARCHITECTURE.md
 
-## Visión general del sistema
+## System overview
 
-**Plataforma de Comercio** es un sistema de comercio electrónico multivendedor donde múltiples vendedores pueden administrar sus propias tiendas y productos, mientras los compradores pueden explorar productos, gestionar carritos y realizar pedidos.
+**Plataforma de Comercio** is a multi-vendor e-commerce platform where multiple sellers can administer their own stores and products, while buyers can explore products, manage shopping carts, and place orders.
 
-## Arquitectura elegida
+## chosen architecture
 
-**Monolito modular**: El backend está organizado como un monolito cuidadosamente dividido en módulos, cada uno con responsabilidades bien definidas. Esta arquitectura equilibra la simplicidad de un monolito con la mantenibilidad de una arquitectura modular.
+**Modular monolith**: The backend is organized as a carefully divided monolith into modules, each with well-defined responsibilities. This architecture balances the simplicity of a monolith with the maintainability of a modular architecture.
 
-## Tecnologías y responsabilidades
+## Technologies and responsibilities
 
 ### Backend (Python 3.12+)
-- **FastAPI**: Framework web REST API
-- **SQLAlchemy 2.0**: ORM para interacción con base de datos
-- **Pydantic**: Validación y tipado de esquemas
-- **Alembic**: Migraciones de base de datos
-- **PostgreSQL**: Base de datos relacional principal
-- **JWT**: Autenticación basada en tokens
-- **Argon2**: Hash seguro de contraseñas
-- **Pytest**: Suite de pruebas
-- **HTTPX**: Cliente HTTP para llamadas externas
+- **FastAPI**: REST API web framework
+- **SQLAlchemy 2.0**: ORM for database interaction
+- **Pydantic**: Validation and schema typing
+- **Alembic**: Database migrations
+- **PostgreSQL**: Relational database
+- **JWT**: Token-based authentication
+- **Argon2**: Secure password hashing
+- **Pytest**: Testing suite
+- **HTTPX**: HTTP client for external calls
 
 ### Frontend (Next.js)
-- **Next.js**: Framework SSR/RSC
-- **TypeScript**: Tipado estático
-- **Tailwind CSS**: Estilos utilitarios
+- **Next.js**: SSR/RSC framework
+- **TypeScript**: Static typing
+- **Tailwind CSS**: Utility-first styling
 
-## Organización modular del backend
+## Modular backend organization
 
-El backend está dividido en los siguientes módulos:
+The backend is divided into the following modules:
 
-### 1. auth-module (Autenticación y Autorización)
-- Gestión de usuarios (registro, login, logout)
-- Validación de credenciales
-- Control de sesiones JWT
+### 1. auth-module (Authentication and Authorization)
+- User management (registration, login, logout)
+- Credential validation
+- JWT session control
 
-### 2. user-module (Perfil de usuarios)
-- Gestión de perfiles de compradores y vendedores
-- Configuración de cuenta
-- Preferencias de usuario
+### 2. user-module (User profiles)
+- Management of buyer and seller profiles
+- Account configuration
+- User preferences
 
-### 3. seller-module (Administración de vendedores)
-- Registro de nuevos vendedores
-- Gestión de tiendas
-- Autorización de tiendas
-- Datos de pago (simulados)
+### 3. seller-module (Seller management)
+- Registration of new sellers
+- Store management
+- Store authorization
+- Payment data (simulated)
 
-### 4. store-module (Gestión de tiendas)
-- Información de tiendas
-- Configuración de tienda
-- Gestión de imágenes
+### 4. store-module (Store management)
+- Store information
+- Store configuration
+- Image management
 
-### 5. category-module (Catálogo de categorías)
-- Definición de categorías de productos
-- Jerarquía de categorías
-- Gestión de etiquetas
+### 5. category-module (Category catalog)
+- Definition of product categories
+- Category hierarchy
+- Label management
 
-### 6. product-module (Catálogo de productos)
-- Gestión de inventario
-- Definición de productos
-- Imágenes y especificaciones
-- Control de stock
+### 6. product-module (Product catalog)
+- Inventory management
+- Product definition
+- Images and specifications
+- Stock control
 
-### 7. cart-module (Carrito de compras)
-- Gestión temporal de productos
-- Cálculos de precios
-- Sincronización entre dispositivos
+### 7. cart-module (Shopping cart)
+- Temporary product management
+- Price calculations
+- Cross-device synchronization
 
-### 8. order-module (Gestión de pedidos)
-- Creación y seguimiento de pedidos
-- Cálculo de comisiones
-- Subpedidos por vendedor
-- Validación de precios por backend
+### 8. order-module (Order management)
+- Order creation and tracking
+- Commission calculation
+- Sub-orders by seller
+- Backend price validation
 
-### 9. payment-module (Pagos simulados)
-- Simulación de procesamiento de pagos
-- Cálculo de comisiones
-- Control de reembolsos
+### 9. payment-module (Simulated payments)
+- Simulated payment processing
+- Commission calculation
+- Refund control
 
-### 10. commission-module (Sistema de comisiones)
-- Cálculo de comisiones
-- Seguimiento de pagos a vendedores
-- Reportes financieros
+### 10. commission-module (Commission system)
+- Commission calculation
+- Seller payment tracking
+- Financial reports
 
-### 11. review-module (Calificaciones y reseñas)
-- Reseñas de productos
-- Reseñas de tiendas
-- Moderación de contenido
+### 11. review-module (Ratings and reviews)
+- Product reviews
+- Store reviews
+- Content moderation
 
-### 12. notification-module (Notificaciones)
-- Alertas por email
-- Notificaciones en-app
-- Alertas del sistema
+### 12. notification-module (Notifications)
+- Email alerts
+- In-app notifications
+- System alerts
 
-### 13. admin-module (Panel de administración)
-- Estadísticas generales
-- Auditoría de sistema
-- Gestión de usuarios
-- Monitoreo de vendedores
+### 13. admin-module (Administration panel)
+- General statistics
+- System audit
+- User management
+- Seller monitoring
 
-## Comunicación entre frontend y backend
+## Frontend and backend communication
 
-- **API REST**: Endpoints REST tradicionales
-- **HTTP**: Protocolo estándar para todas las llamadas
-- **JSON**: Formato estándar para request/response payloads
-- **JWT**: Token de autenticación en el header Authorization
-- **CORS**: Configurado para comunicación cross-origin
-- **Versionado**: API v1 (será actualizado a v2 cuando sea necesario)
+- **REST API**: Traditional REST endpoints
+- **HTTP**: Standard protocol for all calls
+- **JSON**: Standard format for request/response payloads
+- **JWT**: Token-based authentication in Authorization header
+- **CORS**: Configured for cross-origin communication
+- **Versioning**: API v1 (will be updated to v2 when needed)
 
-## Estrategia multivendedor y aislamiento de datos
+## Multi-vendor strategy and data isolation
 
-### Aislamiento de datos
-- Cada vendedor solo puede acceder a sus propios datos
-- Las tiendas están asociadas a un vendedor específico
-- El sistema implementa comprobaciones de permisos
+### Data isolation
+- Each seller can only access their own data
+- Stores are associated with a specific seller
+- The system implements permission checks
 
-### Diseño de pedidos multivendedor
-- **Pedido principal**: Representa la compra completa del comprador
-- **Subpedidos**: Cada vendedor recibe su propio subpedido
-- **Cálculo por backend**: Los importes de subpedidos son calculados por el backend, no enviados por el cliente
-- **Validación**: El backend valida todos los cálculos de precios antes de la creación del pedido
+### Multi-vendor order design
+- **Main order**: Represents the complete buyer purchase
+- **Sub-orders**: Each seller receives their own sub-order
+- **Backend calculation**: Sub-order amounts are calculated by the backend, not sent by the client
+- **Validation**: The backend validates all price calculations before order creation
 
-### Flujo de pedidos
-1. El comprador agrega productos al carrito desde múltiples vendedores
-2. El carrito se valida en tiempo real
-3. Al finalizar compra, se calculan importes de subpedidos por vendedor
-4. Se crean registros de pedido principal y subpedidos
-5. El inventario se actualiza por producto
-6. Los pagos son simulados
-7. Las comisiones son calculadas y registradas
+### Order flow
+1. The buyer adds products to cart from multiple sellers
+2. The cart is validated in real time
+3. At final purchase, sub-order amounts are calculated per seller
+4. Main order and sub-order records are created
+5. Inventory is updated per product
+6. Payments are simulated
+7. Commissions are calculated and registered
 
-### Aislamiento de contabilidad
-- Cada vendedor mantiene su propia contabilidad (ingresos, comisiones, etc.)
-- El sistema trackea pagos a vendedores por subpedido
-- Las estadísticas por vendedor son aisladas
-- El panel de admin ve datos agregados
+### Accounting isolation
+- Each seller maintains their own accounting (revenue, commissions, etc.)
+- The system tracks payments to sellers per sub-order
+- Seller statistics are isolated
+- The admin panel views aggregated data
 
-## Puntos críticos de diseño
+## Critical design points
 
-- **Monolito modular**: Equilibrio entre simplicidad y mantenibilidad
-- **Cálculo por backend**: Evita fraudes y asegura consistencia
-- ** Aislamiento de datos**: Garantiza seguridad y privacidad entre vendedores
-- **Simulación de pagos**: Reduce complejidad inicial, permite cambios futuros
-- **Subpedidos**: Mantiene contabilidad clara por vendedor
-- **Responsabilidades claras**: Cada módulo tiene una única responsabilidad
+- **Modular monolith**: Balance between simplicity and maintainability
+- **Backend calculation**: Prevents fraud and ensures consistency
+- **Data isolation**: Guarantees security and privacy between sellers
+- **Payment simulation**: Reduces initial complexity, allows future changes
+- **Sub-orders**: Maintains clear accounting per seller
+- **Clear responsibilities**: Each module has a single responsibility
+
+## Architecture diagram
+
+```
++------------------+     +------------------+
+|     Frontend     |     |     Backend      |
+|     (Next.js)    |     |     (FastAPI)    |
++------------------+     +------------------+
+         |                       |
+         |    HTTP/HTTPS          |
+         |                       |
++------------------+     +------------------+
+|   API Gateway    |     |   auth-module    |
++------------------+     +------------------+
+         |                       |
+         |   JWT Token           |
+         v                       v
++------------------+     +------------------+
+| Web/Mobile       |     |   user-module    |
+|    Clients       |     +------------------+
++------------------+     |   seller-module  |
+                        +------------------+
+                        |   store-module   |
+                        +------------------+
+                        |   category-module|
+                        +------------------+
+                        |   product-module |
+                        +------------------+
+                        |   cart-module    |
+                        +------------------+
+                        |   order-module   |
+                        +------------------+
+                        |   payment-module |
+                        +------------------+
+                        |   commission-module|
+                        +------------------+
+                        |   review-module  |
+                        +------------------+
+                        |   notification-module|
+                        +------------------+
+                        |   admin-module   |
+                        +------------------+
+                               |
+                               |
+                           +-----------+
+                           |           |
+                           |   PostgreSQL
+                           |  (Alembic)
+                           +-----------+
+```
