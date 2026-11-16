@@ -5,15 +5,15 @@
 | Field | Value |
 |-------|-------|
 | Current phase | 1 (Fundamentals) |
-| Current task | None authorized yet |
-| Objective | Set up backend foundation for Phase 1 |
-| Scope | `back/` directory — database config, auth module, Alembic, basic tests |
-| Files involved | `back/src/`, `back/tests/`, `back/alembic/`, `back/pyproject.toml` |
-| Completed units | Documentation baseline (6 docs), backend directory structure, config files |
-| Pending units | Database configuration, authentication module, Alembic setup, basic tests |
-| Verification status | Not started |
+| Current task | Database engine configuration (SQLAlchemy 2.0) |
+| Objective | Configure centralized SQLAlchemy 2.0 database engine with environment-based connection URL |
+| Scope | `back/src/core/config.py`, `back/src/core/database.py` — engine creation only (no sessions, no models, no Alembic) |
+| Files involved | `back/src/__init__.py`, `back/src/core/__init__.py`, `back/src/core/config.py`, `back/src/core/database.py` |
+| Completed units | Documentation baseline (6 docs), backend directory structure, config files, database engine configuration |
+| Pending units | Database sessions, Alembic setup, database models, authentication module, basic tests |
+| Verification status | Python syntax verified; import test not possible (dependencies not installed) |
 | Last updated | 2026-11-16 |
 
 ### Notes
 
-The backend directory structure (`back/src/`, `back/tests/`, `back/alembic/`) and configuration files (`.env.example`, `.gitignore`, `pyproject.toml`, `README.md`) have been created and committed. No implementation code has been written yet. The next implementation task requires explicit user authorization before starting.
+Database engine configuration implemented: `create_db_engine()` factory function, `Base` declarative class, and module-level `engine` instance. Uses `pydantic-settings` for environment-based `DATABASE_URL`. No sessions, models, or Alembic configured yet (per task scope).

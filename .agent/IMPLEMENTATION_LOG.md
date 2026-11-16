@@ -27,3 +27,15 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Tests or checks | Directory structure verified; no code to test yet |
 | Commit hashes | `a3ab871` (project config), `5ae0580` (env template), `607e69f` (README) |
 | Observations | Empty `src/`, `tests/`, `alembic/` directories created. No implementation code written yet. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-16 |
+| Phase | Phase 1 (Fundamentals) — Database configuration |
+| Completed unit | SQLAlchemy 2.0 database engine configuration |
+| Files affected | `back/src/__init__.py`, `back/src/core/__init__.py`, `back/src/core/config.py`, `back/src/core/database.py` |
+| Tests or checks | Python syntax verified via `py_compile`; import test not possible (dependencies not installed) |
+| Commit hash | `80b9f59` |
+| Observations | Implemented `create_db_engine()` factory, `Base` declarative class, module-level `engine`. Uses `pydantic-settings` for env-based `DATABASE_URL`. No sessions, models, or Alembic (per task scope). Real DB connection not verified (PostgreSQL not provisioned). |

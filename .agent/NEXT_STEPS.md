@@ -6,7 +6,7 @@
 
 ## Next Recommended Implementation Unit
 
-**Database configuration** — Configure SQLAlchemy connection, Alembic migrations, and PostgreSQL RLS policies.
+**Database sessions and Alembic configuration** — Configure SQLAlchemy session factory (`get_db()` dependency) and Alembic migration environment.
 
 This unit must be completed before any module that requires data persistence (auth, seller, product, order, etc.).
 
@@ -16,22 +16,22 @@ This unit must be completed before any module that requires data persistence (au
 |------------|--------|
 | Backend directory structure (`back/src/`, `back/tests/`, `back/alembic/`) | Complete |
 | Configuration files (`.env.example`, `.gitignore`, `pyproject.toml`, `README.md`) | Complete |
+| SQLAlchemy 2.0 database engine configuration | Complete (`back/src/core/database.py`, commit `80b9f59`) |
 | Local PostgreSQL instance | Not yet provisioned |
-| SQLAlchemy 2.0 connection setup | Not yet started |
 | Alembic configuration | Not yet started |
 
 ## Prerequisites (must be in place before implementation)
 
-- PostgreSQL installed and running locally
+- Local PostgreSQL installed and running
 - Development database created (`plataforma_comercio_dev`)
 - `DATABASE_URL` configured in `back/.env`
-- SQLAlchemy engine and session factory created
-- Alembic environment configured
+- SQLAlchemy session factory (`get_db()`) created
+- Alembic environment configured (`alembic.ini`, `back/alembic/env.py`)
 - RLS policies designed (per `SECURITY.md` row-level security requirement)
 
 ## Completion Criteria
 
-- [ ] `back/src/core/database.py` created with SQLAlchemy engine and `get_db()` dependency
+- [ ] `back/src/core/database.py` updated with session factory and `get_db()` dependency
 - [ ] `back/alembic/env.py` configured for migrations
 - [ ] `alembic.ini` present and functional
 - [ ] `alembic current` runs without errors
@@ -42,7 +42,7 @@ This unit must be completed before any module that requires data persistence (au
 
 **The user must explicitly approve this implementation task before work begins.** No code will be written until authorization is given.
 
-## Subsequent Units (after database config)
+## Subsequent Units (after database config + sessions)
 
 1. **Authentication module** (auth-module): User model, JWT, Argon2, login/register endpoints
 2. **Alembic initial migration**: Create `users` and `sellers` tables
