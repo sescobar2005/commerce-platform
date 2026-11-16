@@ -3,22 +3,22 @@
 ## Development phases
 
 ### Phase 1: Fundamentals (Weeks 1-2)
-**Objective**: Establish solid foundation, set up environment, create basic modules, technical foundation
+**Objective**: Establish foundation, set up environment, create basic modules
 
 #### Tasks
 1. **Project configuration** (Week 1)
-   - Configure module structure
-   - Configure CI/CD pipeline
-   - Configure development tools
-   - Configure monitoring and logging
-   - Configure database (local development)
+   - Module structure
+   - CI/CD pipeline
+   - Development tools
+   - Monitoring and logging
+   - Database (local development)
 
 2. **Database configuration** (Week 1)
-   - Create PostgreSQL database for development
-   - Configure SQLAlchemy connection
-   - Establish database design principles
-   - Configure RLS
-   - Create initial development database
+   - PostgreSQL database for development
+   - SQLAlchemy connection
+   - Database design principles
+   - RLS configuration
+   - Initial development database
 
 3. **Authentication module** (Week 1-2)
    - User model (users)
@@ -66,12 +66,12 @@
 
 #### Phase 2 completion criteria
 - Complete user management
-- Functional seller registration and verification processes
+- Functional seller registration and verification
 - Basic store management
 - Functional category organization
 
 ### Phase 3: Product catalog (Weeks 5-6)
-**Objective**: Implement complete product catalog with inventory
+**Objective**: Implement product catalog with inventory
 
 #### Tasks
 1. **Product module** (Week 5)
@@ -119,7 +119,7 @@
 - Complete order tracking
 
 ### Phase 5: Additional features (Weeks 9-10)
-**Objective**: Implement reviews, notifications and admin features
+**Objective**: Implement reviews, notifications, admin features
 
 #### Tasks
 1. **Review module** (Week 9)
@@ -140,10 +140,9 @@
 - Functional review system
 - Complete notification system
 - Complete admin panel
-- All additional features implemented
 
 ### Phase 6: Optimization and testing (Weeks 11-12)
-**Objective**: Optimize performance, testing, documentation
+**Objective**: Optimize performance, complete testing and documentation
 
 #### Tasks
 1. **Testing** (Week 11)
@@ -162,7 +161,6 @@
    - Complete API documentation
    - User guide
    - Administration guide
-   - Architecture documentation
 
 #### Phase 6 completion criteria
 - All tests passing
@@ -206,10 +204,10 @@
 9. **commission-module → admin-module**: Required for revenue statistics
 
 ### Parallelizable
-- **seller-module, store-module, product-module**: Can be developed in parallel (with auth dependencies)
-- **auth-module**: Foundation for everything
+- **seller-module, store-module, product-module**: Parallel (with auth dependencies)
+- **auth-module**: Foundation for all other modules
 
-## Integration tests
+## Testing
 
 ### Critical dependencies
 1. **auth-module**: Must pass integration tests before dependent modules
@@ -225,21 +223,11 @@
 - **payment-module**: unit, integration, payment-flow
 - **commission-module**: unit, integration, revenue-tracking
 
-## Testing scenarios
-
-### Security testing
+### Testing scenarios
 - **JWT bypass**: Test access without token
 - **SQL injection**: Test injection vectors
 - **Authorization bypass**: Test unauthorized resource access
 - **Rate limiting**: Test limits
-
-### Performance testing
-- **Time limits**: Response times per endpoint
-- **Load testing**: N concurrent users
-- **Memory usage**: Memory per request
-- **Database performance**: Query performance
-
-### Functional testing
 - **Multi-vendor order flow**: Complete order with multiple sellers
 - **Cart flow**: Add, remove, validate, purchase
 - **Seller flow**: Register, create store, add products
@@ -253,8 +241,8 @@
 - **If seller isolation doesn't work**: Halt order implementation
 
 ### Technical risks
-1. **Database complexity**: Add more database phases
-2. **Inventory synchronization**: Add more concurrency control
+1. **Database complexity**: May require additional database phases
+2. **Inventory synchronization**: May require additional concurrency control
 3. **Commission calculation**: Validate backend calculation exhaustively
 4. **Performance**: Optimize database before production
 
@@ -264,82 +252,10 @@
 - **Phase 3 completed**: Maintain auth + seller + product
 - **Phase 4 completed**: Maintain auth + seller + product + cart
 
-## Criteria for phase completion
+## Pending decisions (TBD)
 
-### Phase 1: Fundamentals
-- [ ] CI/CD pipeline running successfully
-- [ ] Development database functional
-- [ ] JWT authentication working
-- [ ] Test suite running
-
-### Phase 2: Basic modules
-- [ ] User registration and verification
-- [ ] Seller profile management
-- [ ] Store creation and management
-- [ ] Functional category organization
-
-### Phase 3: Product catalog
-- [ ] Complete product management
-- [ ] Functional inventory
-- [ ] Cart management
-- [ ] Functional search and filtering
-
-### Phase 4: Orders and payments
-- [ ] Complete order management
-- [ ] Simulated payment system
-- [ ] Commission calculation
-- [ ] Order tracking
-
-### Phase 5: Additional features
-- [ ] Functional review system
-- [ ] Notification system
-- [ ] Admin panel complete
-
-### Phase 6: Optimization and testing
-- [ ] Complete test suite passing
-- [ ] Performance optimization achieved
-- [ ] Documentation complete
-
-## Documentation of next steps
-
-### Documentation
-- **API spec**: Complete after implementing endpoints
-- **DB schema**: Complete with full definitions
-- **Architecture**: Add diagrams per phase
-- **Deployment guide**: Add after optimization
-
-### Sprints
-- **Sprint 1**: Phase 1
-- **Sprint 2**: Phase 2
-- **Sprint 3**: Phase 3
-- **Sprint 4**: Phase 4
-- **Sprint 5**: Phase 5
-- **Sprint 6**: Phase 6
-
-### Schedule adjustments
-- **If phases take longer**: Add testing phases
-- **If phases take less time**: Combine non-critical phases
-- **If dependencies taken wrong**: Reorder dependencies
-
-## Progress tracking plan
-
-### Progress dashboard
-- **Phase**: Track by phases
-- **Task**: Track by tasks
-- **Blockage**: Track blockages
-- **Risk**: Track risks
-
-### Meetings
-- **Daily**: 15-minute standup per team
-- **Weekly**: Sprint review
-- **Bi-weekly**: Phase review
-- **Monthly**: Project review
-
-### Reports
-- **Technical**: Daily progress reports
-- **Managerial**: Sprint/week reports
-- **Client**: Demo of completed phases
-
-## Summary
-
-This plan establishes a clear, risk-based roadmap for developing Plataforma de Comercio. It follows an incremental approach where each phase builds on the previous one, ensuring critical dependencies before additional features. The plan includes exhaustive testing, optimization, and contingency plans for managing risks.
+- **CI/CD pipeline**: Specific tools and configuration TBD
+- **Cache strategy**: What to cache (carts, products, etc.) TBD
+- **Messaging**: Notification system transport TBD
+- **Monitoring**: Metrics and alerts definition TBD
+- **Feature flags**: Simulated vs. real payment configuration TBD
