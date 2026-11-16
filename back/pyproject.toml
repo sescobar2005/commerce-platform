@@ -1,0 +1,51 @@
+[project]
+name = "plataforma-comercio-backend"
+version = "1.0.0"
+description = "Backend para Plataforma de Comercio - E-commerce multivendedor"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.110.0",
+    "sqlalchemy[asyncio]>=2.0.0",
+    "psycopg2-binary>=2.9.0",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    "alembic>=1.13.0",
+    "argon2-cffi>=23.1.0",
+    "python-jose[cryptography]>=3.3.0",
+    "python-multipart>=0.0.6",
+    "email-validator>=2.1.0",
+    "python-dotenv>=1.0.0",
+    "httpx>=0.25.0",
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "sqlalchemy-utils>=0.41.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+    "mypy>=1.5.0",
+]
+
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 100
+target-version = ['py312']
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-v --cov=src --cov-report=term-missing"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
