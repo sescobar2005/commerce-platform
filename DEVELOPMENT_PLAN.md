@@ -1,221 +1,221 @@
 # DEVELOPMENT_PLAN.md
 
-## Fases de desarrollo
+## Development phases
 
-### Fase 1: Fundamentos (Semanas 1-2)
-**Objetivo**: Establecer base sólida, establecer ambiente, crear módulos básicos, foundation técnica
+### Phase 1: Fundamentals (Weeks 1-2)
+**Objective**: Establish solid foundation, set up environment, create basic modules, technical foundation
 
-#### Tareas
-1. **Configuración del proyecto** (Semana 1)
-   - Configurar estructura de módulos
-   - Configurar pipeline CI/CD
-   - Configurar herramientas de desarrollo
-   - Configurar monitoreo y logging
-   - Configurar base de datos (desarrollo local)
+#### Tasks
+1. **Project configuration** (Week 1)
+   - Configure module structure
+   - Configure CI/CD pipeline
+   - Configure development tools
+   - Configure monitoring and logging
+   - Configure database (local development)
 
-2. **Configuración de base de datos** (Semana 1)
-   - Crear base de datos PostgreSQL para desarrollo
-   - Configurar conexión SQLAlchemy
-   - Establecer principios de diseño de DB
-   - Configurar RLS
-   - Crear base de datos de desarrollo inicial
+2. **Database configuration** (Week 1)
+   - Create PostgreSQL database for development
+   - Configure SQLAlchemy connection
+   - Establish database design principles
+   - Configure RLS
+   - Create initial development database
 
-3. **Módulo de autenticación** (Semana 1-2)
-   - User model (usuarios)
-   - Seller model (vendedores)
-   - Auth service (login, registro, tokens)
+3. **Authentication module** (Week 1-2)
+   - User model (users)
+   - Seller model (sellers)
+   - Auth service (login, registration, tokens)
    - JWT implementation
    - Argon2 password hashing
 
-4. **Módulo base de datos** (Semana 1-2)
-   - Configuración de Alembic
-   - Principios de migración
-   - Esquema inicial de base de datos
-   - RLS y políticas
+4. **Database module** (Week 1-2)
+   - Alembic configuration
+   - Migration principles
+   - Initial database schema
+   - RLS and policies
 
-#### Criterios de finalización de fase 1
-- Proyecto clonable
-- Todos los módulos basicos creados
-- Base de datos inicial funcionando
-- Autenticación JWT funcionando
-- CI/CD corriendo exitosamente
+#### Phase 1 completion criteria
+- Clonable project
+- All basic modules created
+- Initial database functional
+- JWT authentication working
+- CI/CD running successfully
 
-### Fase 2: Módulos básicos (Semanas 3-4)
-**Objetivo**: Implementar módulos esenciales para usuarios y sellers
+### Phase 2: Basic modules (Weeks 3-4)
+**Objective**: Implement essential modules for users and sellers
 
-#### Tareas
-1. **Módulo de usuarios** (Semana 3)
-   - User profile endpoints (/api/v1/users/)
-   - Configuración de cuenta
-   - Preferencias de usuario
+#### Tasks
+1. **User module** (Week 3)
+   - User profile endpoints (`/api/v1/users/`)
+   - Account configuration
+   - User preferences
 
-2. **Módulo de vendedores** (Semana 3)
-   - Registro de vendedores (/api/v1/sellers/)
-   - Verificación de seller
-   - Management de perfiles de vendedor
+2. **Seller module** (Week 3)
+   - Seller registration (`/api/v1/sellers/`)
+   - Seller verification
+   - Seller profile management
 
-3. **Módulo de tiendas** (Semana 4)
-   - Creación de tiendas (/api/v1/stores/)
-   - Información de tienda
-   - Management de imágenes
+3. **Store module** (Week 4)
+   - Store creation (`/api/v1/stores/`)
+   - Store information
+   - Image management
 
-4. **Módulo de categorías** (Semana 4)
-   - Management de categorías
-   - Jerarquía de categorías
-   - Management de etiquetas
+4. **Category module** (Week 4)
+   - Category management
+   - Category hierarchy
+   - Label management
 
-#### Criterios de finalización de fase 2
-- Gestión completa de usuarios
-- Procesos de registro/verificación de vendedores
-- Gestión de tiendas básicas
-- Organización de categorías
+#### Phase 2 completion criteria
+- Complete user management
+- Functional seller registration and verification processes
+- Basic store management
+- Functional category organization
 
-### Fase 3: Catálogo de productos (Semanas 5-6)
-**Objetivo**: Implementar catálogo de productos completo con inventario
+### Phase 3: Product catalog (Weeks 5-6)
+**Objective**: Implement complete product catalog with inventory
 
-#### Tareas
-1. **Módulo de productos** (Semana 5)
-   - Esquema de productos
-   - Gestión de imágenes
-   - Búsqueda y filtrado
+#### Tasks
+1. **Product module** (Week 5)
+   - Product schema
+   - Image management
+   - Search and filtering
 
-2. **Módulo de inventario** (Semana 5-6)
-   - Gestión de inventario
-   - Control de stock
-   - Validación de disponibilidad
+2. **Inventory module** (Week 5-6)
+   - Inventory management
+   - Stock control
+   - Availability validation
 
-3. **Módulo de carritos** (Semana 6)
-   - Gestión de carritos
-   - Gestión de items
-   - Validación de carrito
+3. **Cart module** (Week 6)
+   - Cart management
+   - Item management
+   - Cart validation
 
-#### Criterios de finalización de fase 3
-- Gestión completa de catálogo de productos
-- Sistema de inventario funcional
-- Gestión de carritos básica
-- Búsqueda y filtrado funcionales
+#### Phase 3 completion criteria
+- Complete product catalog management
+- Functional inventory system
+- Basic cart management
+- Functional search and filtering
 
-### Fase 4: Pedidos y pagos (Semanas 7-8)
-**Objetivo**: Implementar sistema de pedidos con pagos simulados
+### Phase 4: Orders and payments (Weeks 7-8)
+**Objective**: Implement order system with simulated payments
 
-#### Tareas
-1. **Módulo de pedidos** (Semana 7)
-   - Creación de pedidos
-   - Seguimiento de pedidos
-   - Subpedidos por vendedor
+#### Tasks
+1. **Order module** (Week 7)
+   - Order creation
+   - Order tracking
+   - Sub-orders by seller
 
-2. **Módulo de pagos** (Semana 7-8)
-   - Sistema de pagos simulados
-   - Procesamiento de reembolsos
+2. **Payment module** (Week 7-8)
+   - Simulated payment processing
+   - Refund processing
 
-3. **Módulo de comisiones** (Semana 8)
-   - Sistema de comisiones
-   - Management de pagos a vendedores
+3. **Commission module** (Week 8)
+   - Commission system
+   - Seller payment management
 
-#### Criterios de finalización de fase 4
-- Gestión completa de pedidos
-- Sistema de pagos simulados
-- Cálculo de comisiones funcional
-- Seguimiento de pedidos completo
+#### Phase 4 completion criteria
+- Complete order management
+- Simulated payment system
+- Functional commission calculation
+- Complete order tracking
 
-### Fase 5: Características adicionales (Semanas 9-10)
-**Objetivo**: Implementar reseñas, notificaciones y admin features
+### Phase 5: Additional features (Weeks 9-10)
+**Objective**: Implement reviews, notifications and admin features
 
-#### Tareas
-1. **Módulo de reseñas** (Semana 9)
-   - Sistema de reseñas de productos
-   - Sistema de reseñas de tiendas
-   - Moderación de contenido
+#### Tasks
+1. **Review module** (Week 9)
+   - Product review system
+   - Store review system
+   - Content moderation
 
-2. **Módulo de notificaciones** (Semana 9-10)
-   - Alertas por email
-   - Notificaciones en-app
+2. **Notification module** (Week 9-10)
+   - Email alerts
+   - In-app notifications
 
-3. **Módulo de admin** (Semana 10)
-   - Panel de admin
-   - Estadísticas generales
-   - Auditoría de sistema
+3. **Admin module** (Week 10)
+   - Admin panel
+   - General statistics
+   - System audit
 
-#### Criterios de finalización de fase 5
-- Sistema de reseñas funcional
-- Sistema de notificaciones completo
-- Panel de admin completo
-- Todas las características adicionales implementadas
+#### Phase 5 completion criteria
+- Functional review system
+- Complete notification system
+- Complete admin panel
+- All additional features implemented
 
-### Fase 6: Optimización y testing (Semanas 11-12)
-**Objetivo**: Optimizar rendimiento, testing, documentación
+### Phase 6: Optimization and testing (Weeks 11-12)
+**Objective**: Optimize performance, testing, documentation
 
-#### Tareas
-1. **Testing** (Semana 11)
-   - Suite de pruebas unitarias
-   - Pruebas de integracion
-   - Pruebas de API
-   - Pruebas de seguridad
+#### Tasks
+1. **Testing** (Week 11)
+   - Unit test suite
+   - Integration tests
+   - API tests
+   - Security tests
 
-2. **Optimización** (Semana 11-12)
-   - Optimización de base de datos
-   - Optimización de API
-   - Optimización de caché
-   - Optimización de imágenes
+2. **Optimization** (Week 11-12)
+   - Database optimization
+   - API optimization
+   - Cache optimization
+   - Image optimization
 
-3. **Documentación** (Semana 12)
-   - Documentación completa de API
-   - Guía de usuario
-   - Guía de administración
-   - Documentación de arquitectura
+3. **Documentation** (Week 12)
+   - Complete API documentation
+   - User guide
+   - Administration guide
+   - Architecture documentation
 
-#### Criterios de finalización de fase 6
-- Todos los tests pasando
-- Optimización de rendimiento alcanzada
-- Documentación completa
+#### Phase 6 completion criteria
+- All tests passing
+- Performance optimization achieved
+- Documentation complete
 
-## Orden de implementación
+## Implementation order
 
-### Dependencies críticas primero
-1. **Base de datos**: Crear esquemas de base de datos y RLS
-2. **Autenticación**: JWT + Argon2 + registro/login
-3. **Autorización**: Control de acceso por roles + aislamiento de seller
-4. **Usuarios**: Gestión de perfiles básicos
+### Critical dependencies first
+1. **Database**: Create database schemas and RLS
+2. **Authentication**: JWT + Argon2 + registration/login
+3. **Authorization**: Role-based access + seller isolation
+4. **Users**: Basic profile management
 
-### Lógica de negocio primero
-1. **Inventario**: Control de stock y validación de disponibilidad
-2. **Pedidos**: Creación de pedidos y cálculo de subpedidos por backend
-3. **Comisiones**: Cálculo de comisiones y tracking de pagos a vendedores
+### Business logic first
+1. **Inventory**: Stock control and availability validation
+2. **Orders**: Order creation and backend sub-order calculation
+3. **Commissions**: Commission calculation and seller payment tracking
 
-### Experiencia de usuario primero
-1. **Carritos**: Gestión de carritos intuitiva
-2. **Catálogo**: Búsqueda y filtrado potentes
-3. **Reseñas**: Sistema de feedback completo
+### User experience first
+1. **Carts**: Intuitive cart management
+2. **Catalog**: Powerful search and filtering
+3. **Reviews**: Complete feedback system
 
-### Características adicionales
-- Notificaciones (después de pedidos)
-- Panel de admin (después de funcionalidad principal)
-- Moderación (antes de crecimiento de reseñas)
+### Additional features
+- Notifications (after orders)
+- Admin panel (after core functionality)
+- Moderation (before review growth)
 
-## Dependencias entre módulos
+## Module dependencies
 
-### De menor a mayor
-1. **auth-module → user-module**: Necesario para autenticación de usuarios
-2. **auth-module → seller-module**: Necesario para registro de vendedores
-3. **user-module → cart-module**: Necesario para carritos de usuarios
-4. **product-module → cart-module**: Necesario para gestión de items en carrito
-5. **product-module → order-module**: Necesario para items en pedido
-6. **cart-module → order-module**: Necesario para creación de pedido
-7. **order-module → commission-module**: Necesario para cálculo de comisiones
-8. **order-module → payment-module**: Necesario para procesamiento de pagos
-9. **commission-module → admin-module**: Necesario para estadísticas de revenue
+### From lesser to greater
+1. **auth-module → user-module**: Required for user authentication
+2. **auth-module → seller-module**: Required for seller registration
+3. **user-module → cart-module**: Required for user carts
+4. **product-module → cart-module**: Required for cart items
+5. **product-module → order-module**: Required for order items
+6. **cart-module → order-module**: Required for order creation
+7. **order-module → commission-module**: Required for commission calculation
+8. **order-module → payment-module**: Required for payment processing
+9. **commission-module → admin-module**: Required for revenue statistics
 
 ### Parallelizable
-- **seller-module, store-module, product-module**: Poden ser desarrollados en paralelo (con dependencies en auth)
-- **auth-module**: Base para todo
+- **seller-module, store-module, product-module**: Can be developed in parallel (with auth dependencies)
+- **auth-module**: Foundation for everything
 
-## Pruebas de integración
+## Integration tests
 
-### Dependencias críticas
-1. **auth-module**: Debe pasar pruebas de integración antes de módulos dependientes
-2. **db-setup**: Base de datos debe estar lista antes de cualquier prueba de módulo
+### Critical dependencies
+1. **auth-module**: Must pass integration tests before dependent modules
+2. **db-setup**: Database must be ready before any module tests
 
-### Pruebas por módulo
+### Tests by module
 - **auth-module**: unit, integration, security
 - **seller-module**: unit, integration, authorization
 - **store-module**: unit, integration, seller-isolation
@@ -225,121 +225,121 @@
 - **payment-module**: unit, integration, payment-flow
 - **commission-module**: unit, integration, revenue-tracking
 
-## Escenarios de testing
+## Testing scenarios
 
 ### Security testing
-- **JWT bypass**: Probar acceso sin token
-- **SQL injection**: Probar vectors de inyección
-- **Authorization bypass**: Probar acceso no autorizado a recursos
-- **Rate limiting**: Probar limits
+- **JWT bypass**: Test access without token
+- **SQL injection**: Test injection vectors
+- **Authorization bypass**: Test unauthorized resource access
+- **Rate limiting**: Test limits
 
 ### Performance testing
-- **Límites de tiempo**: Response times por endpoint
-- **Load testing**: N usuarios simultáneos
-- **Memory usage**: Uso de memoria por request
+- **Time limits**: Response times per endpoint
+- **Load testing**: N concurrent users
+- **Memory usage**: Memory per request
 - **Database performance**: Query performance
 
 ### Functional testing
-- **Flujo de pedidos multivendedor**: Pedido completo con múltiples vendedores
-- **Flujo de carrito**: Agregar, remover, validar, comprar
-- **Flujo de seller**: Registrar, crear tienda, agregar productos
-- **Flujo de usuario**: Login, browse, agregar a carrito, comprar
+- **Multi-vendor order flow**: Complete order with multiple sellers
+- **Cart flow**: Add, remove, validate, purchase
+- **Seller flow**: Register, create store, add products
+- **User flow**: Login, browse, add to cart, purchase
 
-## Plan de contingencia
+## Contingency plan
 
-### Bloqueos de dependencias
-- **Si auth no funciona**: Detener todas las fases siguientes
-- **Si db no funciona**: Revertir todo a fase 1
-- **Si seller isolation no funciona**: Detener implementación de pedidos
+### Dependency blockages
+- **If auth doesn't work**: Halt all subsequent phases
+- **If db doesn't work**: Revert to phase 1
+- **If seller isolation doesn't work**: Halt order implementation
 
-### Riesgos técnicos
-1. **Complejidad de base de datos**: Agregar mas fases de database
-2. **Sincronización de inventario**: Agregar mas control de concurrencia
-3. **Cálculo de comisiones**: Validar calculation por backend exhaustivamente
-4. **Performance**: Optimizar base de datos antes de producción
+### Technical risks
+1. **Database complexity**: Add more database phases
+2. **Inventory synchronization**: Add more concurrency control
+3. **Commission calculation**: Validate backend calculation exhaustively
+4. **Performance**: Optimize database before production
 
-### Plan de rollback
-- **Fase 1 completada**: Revertir a base estable
-- **Fase 2 completada**: Mantener base de auth funcionando
-- **Fase 3 completada**: Mantener auth + seller funcionando
-- **Fase 4 completada**: Mantener auth + seller + product funcionando
+### Rollback plan
+- **Phase 1 completed**: Revert to stable base
+- **Phase 2 completed**: Maintain auth foundation
+- **Phase 3 completed**: Maintain auth + seller + product
+- **Phase 4 completed**: Maintain auth + seller + product + cart
 
-## Criterios de finalización de cada fase
+## Criteria for phase completion
 
-### Fase 1: Fundamentos
-- [ ] Pipeline CI/CD corriendo exitosamente
-- [ ] Base de datos de desarrollo funcional
-- [ ] Autenticación JWT funcionando
-- [ ] Test suite corriendo
+### Phase 1: Fundamentals
+- [ ] CI/CD pipeline running successfully
+- [ ] Development database functional
+- [ ] JWT authentication working
+- [ ] Test suite running
 
-### Fase 2: Módulos básicos
-- [ ] Registro y verificación de usuarios
-- [ ] Gestión de perfiles de sellers
-- [ ] Creación y management de tiendas
-- [ ] Organización de categorías funcional
+### Phase 2: Basic modules
+- [ ] User registration and verification
+- [ ] Seller profile management
+- [ ] Store creation and management
+- [ ] Functional category organization
 
-### Fase 3: Catálogo de productos
-- [ ] Management completo de productos
-- [ ] Inventario funcional
-- [ ] Gestión de carritos
-- [ ] Búsqueda y filtrado funcionales
+### Phase 3: Product catalog
+- [ ] Complete product management
+- [ ] Functional inventory
+- [ ] Cart management
+- [ ] Functional search and filtering
 
-### Fase 4: Pedidos y pagos
-- [ ] Sistema de pedidos completo
-- [ ] Procesamiento de pagos simulados
-- [ ] Cálculo de comisiones
-- [ ] Seguimiento de pedidos
+### Phase 4: Orders and payments
+- [ ] Complete order management
+- [ ] Simulated payment system
+- [ ] Commission calculation
+- [ ] Order tracking
 
-### Fase 5: Características adicionales
-- [ ] Sistema de reseñas completo
-- [ ] Sistema de notificaciones
-- [ ] Panel de admin completo
+### Phase 5: Additional features
+- [ ] Functional review system
+- [ ] Notification system
+- [ ] Admin panel complete
 
-### Fase 6: Optimización y testing
-- [ ] Suite de tests completa pasando
-- [ ] Optimización de rendimiento alcanzada
-- [ ] Documentación completa
+### Phase 6: Optimization and testing
+- [ ] Complete test suite passing
+- [ ] Performance optimization achieved
+- [ ] Documentation complete
 
-## Documentación de próximos pasos
+## Documentation of next steps
 
-### Documentación
-- **API spec**: Completar después de implementar endpoints
-- **DB schema**: Completar con definitions completas
-- **Arquitectura**: Agregar diagrams por fase
-- **Guía de deployment**: Agregar después de optimizar
+### Documentation
+- **API spec**: Complete after implementing endpoints
+- **DB schema**: Complete with full definitions
+- **Architecture**: Add diagrams per phase
+- **Deployment guide**: Add after optimization
 
 ### Sprints
-- **Sprint 1**: Fase 1
-- **Sprint 2**: Fase 2
-- **Sprint 3**: Fase 3
-- **Sprint 4**: Fase  jævla 4
-- **Sprint 5**: Fase 5
-- **Sprint 6**: Fase 6
+- **Sprint 1**: Phase 1
+- **Sprint 2**: Phase 2
+- **Sprint 3**: Phase 3
+- **Sprint 4**: Phase 4
+- **Sprint 5**: Phase 5
+- **Sprint 6**: Phase 6
 
-### Ajustes de cronograma
-- **Si phases toman mas tiempo**: Agregar fases de testing
-- **Si phases toman menos tiempo**: Combinar fases no críticas
-- **Si dependencies tomadas mal**: Reordenar dependencias
+### Schedule adjustments
+- **If phases take longer**: Add testing phases
+- **If phases take less time**: Combine non-critical phases
+- **If dependencies taken wrong**: Reorder dependencies
 
-## Plan de seguimiento
+## Progress tracking plan
 
-### Tablero de progreso
-- **Fase**: Seguimiento por fases
-- **Tarea**: Seguimiento por tareas
-- **Bloqueo**: Seguimiento de bloqueos
-- **Riesgo**: Seguimiento de riesgos
+### Progress dashboard
+- **Phase**: Track by phases
+- **Task**: Track by tasks
+- **Blockage**: Track blockages
+- **Risk**: Track risks
 
-### Reuniones
-- **Diario**: Standup de 15min por equipo
-- **Semanal**: Revisión de sprint
-- **Quincenal**: Revisión de fases
-- **Mensual**: Revisión de proyecto
+### Meetings
+- **Daily**: 15-minute standup per team
+- **Weekly**: Sprint review
+- **Bi-weekly**: Phase review
+- **Monthly**: Project review
 
-### Reportes
-- **Técnico**: Informes de progreso diarios
-- **Gerencial**: Reportes de sprint/semana
-- **Clientes**: Demo de fases completadas
+### Reports
+- **Technical**: Daily progress reports
+- **Managerial**: Sprint/week reports
+- **Client**: Demo of completed phases
 
-## Resumen
+## Summary
 
-Este plan establece un roadmap claro y basado en riesgo para desarrollar Plataforma de Comercio. Sigue un enfoque incremental donde cada fase construye sobre la anterior, asegurando dependencies críticas antes que características adicionales. El plan incluye testing exhaustivo, optimización y planes de contingencia para manejar riesgos.
+This plan establishes a clear, risk-based roadmap for developing Plataforma de Comercio. It follows an incremental approach where each phase builds on the previous one, ensuring critical dependencies before additional features. The plan includes exhaustive testing, optimization, and contingency plans for managing risks.
