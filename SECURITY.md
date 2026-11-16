@@ -1,249 +1,249 @@
 # SECURITY.md
 
-## Estrategia de autenticación
+## Authentication strategy
 
-### Autenticación JWT
-- **Algoritmo**: RS256 (simétrico, asimétrico)
-- **Emisor**: El servidor (en base a `ISS` del config)
-- **Audiencia**: Frontend (en base a `AUD` del config)
-- **Duración**: 15 minutos (acceso), 7 días (refresh)
-- **Refresh token**: Rotativo, almacenado en base de datos
-- **Revocación**:Blacklist local (Redis), tokens revocados invalidan accesos
+### JWT authentication
+- **Algorithm**: RS256 (symmetric, asymmetric)
+- **Issuer**: The server (based on `ISS` config)
+- **Audience**: Frontend (based on `AUD` config)
+- **Duration**: 15 minutes (access), 7 days (refresh)
+- **Refresh token**: Rotatable, stored in database
+- **Revocation**: Local blacklist (Redis), revoked tokens invalidate access
 
-### Flujo de autenticación
-1. **Registro (`/api/v1/auth/register`)**:
-   - Recibir username, email, password
-   - Validar con Pydantic (ej: formato email, longitud password)
-   - Hashear password con Argon2 (argon2_id or argon2id)
-   - Guardar en `usuarios` tabla
-   - Retornar access_token + refresh_token
+### Authentication flow
+1. **Registration (`/api/v1/auth/register`)**:
+   - Receive username, email, password
+   - Validate with Pydantic (e.g., email format, password length)
+   - Hash password with Argon2 (argon2_id or argon2id)
+   - Save in `users` table
+   - Return access_token + refresh_token
 
-2. **Inicio de sesión (`/api/v1/auth/login`)**:
-   - Validar username/email + password
-   - Verificar password con Argon2
-   - Generar JWT access_token (15min)
-   - Generar JWT refresh_token (7días)
-   - Guardar refresh_token en base de datos
-   - Retornar tokens
+2. **Login (`/api/v1/auth/login`)**:
+   - Validate username/email + password
+   - Verify password with Argon2
+   - Generate JWT access_token (15min)
+   - Generate JWT refresh_token (7days)
+   - Save refresh_token in database
+   - Return tokens
 
-3. **Cierre de sesión (`/api/v1/auth/logout`)**:
-   - Invalidar refresh_token via blacklist
-   - Eliminar refresh_token de base de datos
-   - Retornar success
+3. **Logout (`/api/v1/auth/logout`)`:
+   - Invalidate refresh_token via blacklist
+   - Delete refresh_token from database
+   - Return success
 
-4. **Validación de token**:
-   - Middleware intercepta todas las rutas protegidas
-   - Verificar JWT en header `Authorization: Bearer {token}`
-   - Verificar en blacklist (si está revocado)
-   - Extraer user_id y claim del token
-   - Cargar usuario de base de datos
-   - Adjuntar al request context
+4. **Token validation**:
+   - Middleware intercepts all protected routes
+   - Verify JWT in `Authorization: Bearer {token}` header
+   - Verify in blacklist (if revoked)
+   - Extract user_id and claims from token
+   - Load user from database
+   - Attach to request context
 
-### Recuperación de contraseña
+### Password recovery
 - **Flow**: `POST /api/v1/auth/forgot-password` + `POST /api/v1/auth/reset-password`
-- **Rate limit**: 5 intentos por hora por IP
-- **Email de recuperación**: Token temporal (1 hora)
-- **Cambio de password**: Invalidar tokens previos
-- **Tokens seguros**: No reutilizar tokens previos tras cambio de password
+- **Rate limit**: 5 attempts per hour per IP
+- **Recovery email**: Temporary token (1 hour)
+- **Password change**: Invalidates previous tokens
+- **Secure tokens**: No reuse of previous tokens after password change
 
-## Autorización y roles
+## Authorization and roles
 
-### Roles de usuarios
-- **user** (comprador): Acceso base, puede comprar, escribir reseñas
-- **seller** (vendedor): Gestión de tienda, productos, pedidos, inventario
-- **admin**: Acceso completo a todo el sistema
-- **moderator**: Administración de contenido, moderación de reseñas
+### User roles
+- **user** (buyer): Base access, can buy, write reviews
+- **seller** (vendor): Store management, products, orders, inventory
+- **admin**: Complete system access
+- **moderator**: Content administration, review moderation
 
-### Esquema de roles
+### Role schema
 ```sql
-usuarios.is_seller BOOLEAN DEFAULT FALSE,
-usuarios.is_verified BOOLEAN DEFAULT FALSE,
-usuarios.is_admin BOOLEAN DEFAULT FALSE,
-usuarios.is_moderator BOOLEAN DEFAULT FALSE
+users.is_seller BOOLEAN DEFAULT FALSE,
+users.is_verified BOOLEAN DEFAULT FALSE,
+users.is_admin BOOLEAN DEFAULT FALSE,
+users.is_moderator BOOLEAN DEFAULT FALSE
 ```
 
-### Autorización por rol
-- **Rutas protegidas**:
-  - `POST /api/v1/sellers/`: Solo users no vendedores pueden registrar
-  - `PUT /api/v1/users/{user_id}`: Solo propio user_id
-  - `GET/PUT /api/v1/sellers/{seller_id}`: Solo el dueño del seller_id
-  - `GET/PUT /api/v1/stores/{store_id}`: Solo el dueño del store_id
-  - `GET /api/v1/admin/`: Solo administradores
-  - `PUT /api/v1/orders/{order_id}/status`: Solo admin o vendedor del order
+### Role-based authorization
+- **Protected routes**:
+  - `POST /api/v1/sellers/`: Only non-vendor users can register
+  - `PUT /api/v1/users/{user_id}`: Only own user_id
+  - `GET/PUT /api/v1/sellers/{seller_id}`: Only the owner of the seller_id
+  - `GET/PUT /api/v1/stores/{store_id}`: Only the owner of the store_id
+  - `GET /api/v1/admin/`: Only administrators
+  - `PUT /api/v1/orders/{order_id}/status`: Only admin or seller of the order
 
-### Comprobación de permisos
-- **Dueño del recurso**: `user_id` del request == `resource.user_id`
-- **Seller isolation**: `store.seller_id` == `seller_id` del request o `is_admin`
-- **Admin override**: `is_admin` del request permite todo
-- **Role-based**: `is_seller`, `is_moderator`, `is_admin` verificados
+### Permission checking
+- **Resource owner**: `user_id` from request == `resource.user_id`
+- **Seller isolation**: `store.seller_id` == `request.seller_id` or `is_admin`
+- **Admin override**: `is_admin` from request allows everything
+- **Role-based**: `is_seller`, `is_moderator`, `is_admin` verified
 
-## Protección de contraseñas con Argon2
+## Password protection with Argon2
 
-### Configuración
-- **Algoritmo**: argon2id (nivel más alto de seguridad)
-- **Hash**: Formato estándar: `$argon2id$v=19$m=65536,t=3,p=4$` + salt + hash
-- **Salt**: Aleatorio por usuario, 16 bytes
-- **Parámetros**:
+### Configuration
+- **Algorithm**: argon2id (highest security level)
+- **Hash**: Standard format: `$argon2id$v=19$m=65536,t=3,p=4$` + salt + hash
+- **Salt**: Random per user, 16 bytes
+- **Parameters**:
   - Memory: 64MB (65536 KB)
   - Iterations: 3
   - Parallelism: 4
   - Hash length: 32 bytes
 
-### Uso en código
+### Code usage
 ```python
 from argon2 import PasswordHasher
 
 ph = PasswordHasher(time_cost=3, memory_cost=65536, parallelism=4)
 
-# Hashear
+# Hash
 password_hash = ph.hash(password)
 
-# Verificar
+# Verify
 ph.verify(password_hash, password)
 ph.verify(password_hash, password, tolerate_milliseconds=50)
 ```
 
-### Seguridad
-- **No almacenar plaintext**: Solo hash
-- **No reutilizar salts**: Generar salt aleatorio por usuario
-- **Rate limit**: 5 intentos por usuario por hora para login
-- **Enumerar usuarios**: No indicar si email existe en registro
-- **RANGO de hash**: Usar parámetros altos para prevenir ataques GPU
-- **Verificación lenta**: Tiempo de hash ~100ms en CPU de servidor
+### Security
+- **No plaintext storage**: Only hash
+- **No salt reuse**: Generate random salt per user
+- **Rate limit**: 5 attempts per user per hour for login
+- **User enumeration**: No indication if email exists in registration
+- **Hash strength**: Use high parameters to prevent GPU attacks
+- **Slow verification**: Hash time ~100ms on server CPU
 
-## Uso de JWT
+## JWT usage
 
-### Configuración JWT
-- **Algoritmo**: RS256 (asimétrico)
+### JWT configuration
+- **Algorithm**: RS256 (asymmetric)
 - **Issuer**: `plataforma-comercio-server`
 - **Audience**: `plataforma-comercio-frontend`
-- **Secret**: Clave privada RSA-2048, protegida con variables de entorno
-- **Expiry**: 15 minutos (access), 7 días (refresh)
+- **Secret**: RSA-2048 private key, protected with environment variables
+- **Expiry**: 15 minutes (access), 7 days (refresh)
 
-### Estrategia de tokens
-- **Access token**: corto tiempo, contenido: `user_id, username, role, exp, iat`
-- **Refresh token**: largo tiempo, almacenado en base de datos, random
-- **Revocación**: Refresh token inválido permite revocar acceso sin access token
+### Token strategy
+- **Access token**: Short-lived, content: `user_id, username, role, exp, iat`
+- **Refresh token**: Long-lived, stored in database, random
+- **Revocation**: Invalid refresh token allows revoking access without access token
 
-### Validación
+### Validation
 ```python
 from fastapi import Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 async def verify_token(credentials: HTTPAuthorizationCredentials = Security(HTTPBearer)):
-    # Decodificar y verificar JWT
-    # Cargar usuario de la base de datos
-    # Retornar usuario
+    # Decode and verify JWT
+    # Load user from database
+    # Return user
 ```
 
-## Aislamiento de datos entre vendedores
+## Data isolation between sellers
 
-### Aislamiento de base de datos
-- **Row-level security**: Cada query filtrado por `seller_id` apropiado
-- **Función de rows**: `is_seller_of_store(store_id)` retorna bool
-- **Políticas**: RLS habilitado, restricción por rol
+### Database isolation
+- **Row-level security**: Each query filtered by appropriate seller_id
+- **Row functions**: `is_seller_of_store(store_id)` returns bool
+- **Policies**: RLS enabled, role-based restriction
 
-### Comprobaciones de autorización
-- **Access control list**: Lista negra/blanca por seller_id
-- **Vistas materializadas**: `v_products_by_seller` filtrado automáticamente
-- **Debug mode**: No mostrar datos de otros vendedores en logs
+### Authorization checks
+- **Access control list**: Blacklist/white-list by seller_id
+- **Materialized views**: `v_products_by_seller` filtered automatically
+- **Debug mode**: No display of other sellers' data in logs
 
-### Aislamiento por módulo
-- **seller-module**: Solo datos del seller dueño
-- **store-module**: Solo tiendas del seller
-- **product-module**: Solo productos de tiendas del seller
-- **order-module**: Solo pedidos/subpedidos de productos del seller
-- **commission-module**: Solo comisiones del seller
+### Module isolation
+- **seller-module**: Only data of the owning seller
+- **store-module**: Only stores of the seller
+- **product-module**: Only products of the seller's stores
+- **order-module**: Only orders/sub-orders of the seller's products
+- **commission-module**: Only commissions of the seller
 
-### Escenarios de seguridad
-- **Seller A** no puede ver **Seller B** sus productos o pedidos
-- **Admin** puede ver todo (con restricciones audit)
-- **Seller** solo puede modificar sus propios datos
-- **Users** pueden solo ver productos y crear pedidos
+### Security scenarios
+- **Seller A** cannot view **Seller B**'s products or orders
+- **Admin** can view everything (with audit restrictions)
+- **Seller** can only modify their own data
+- **Users** can only view products and create orders
 
-## Validación de entradas y protección de información
+## Input validation and information protection
 
-### Validación de entradas
-- **Request body**: Validado via Pydantic schemas
-- **Path params**: Validados como UUIDs/strings
-- **Query params**: Validados con rangos apropiados
-- **Headers**: Validados (Authorization, Content-Type)
+### Input validation
+- **Request body**: Validated via Pydantic schemas
+- **Path params**: Validated as UUIDs/strings
+- **Query params**: Validated with appropriate ranges
+- **Headers**: Validated (Authorization, Content-Type)
 
-### Saneamiento de entradas
-- **SQL injection**: Prevido via SQLAlchemy ORM
-- **XSS**: Prevido via sanitización HTML en frontend
-- **CSRF**: JWT elimina necesidad de CSRF para API
-- **Buffer overflow**: Prevido via validación de tamaño de entrada
+### Input sanitization
+- **SQL injection**: Prevented via SQLAlchemy ORM
+- **XSS**: Prevented via HTML sanitization in frontend
+- **CSRF**: JWT eliminates need for CSRF for API
+- **Buffer overflow**: Prevented via input size validation
 
-### Limitación de rate
-- **Global**: 100 requests por minuto por IP
-- **Login**: 5 intentos por usuario por hora
-- **Register**: 1 intento por email por hora
-- **Password reset**: 3 intentos por usuario por hora
+### Rate limiting
+- **Global**: 100 requests per minute per IP
+- **Login**: 5 attempts per user per hour
+- **Register**: 1 attempt per email per hour
+- **Password reset**: 3 attempts per user per hour
 
-### Protección de datos sensibles
-- **Password hash**: Argon2, salt aleatorio
-- **Datos de pago**: Tokenización en servicios de pago externos
-- **Información personal**: Cifrado en tránsito (HTTPS), cifrado en reposo (TLS)
-- **Logs**: No loggear contraseñas, tokens, datos de pago
+### Sensitive data protection
+- **Password hash**: Argon2, random salt
+- **Payment data**: Tokenization in external payment services
+- **Personal information**: Encryption in transit (HTTPS), encryption in rest (TLS)
+- **Logs**: No logging of passwords, tokens, payment data
 
-### Auditoría y monitoreo
-- **Accesos fallidos**: Loggear intentos de login fallidos
-- **Datos sensibles**: Enmascarar en logs (ej: email → us***@***.com)
-- **Cambios de datos**: Loggear cambios en tablas importantes (usuarios, pedidos)
-- **Monitoreo**: Detección de patrones anómalos (ej: múltiples logins fallidos)
+### Audit and monitoring
+- **Failed access attempts**: Log failed login attempts
+- **Sensitive data**: Mask in logs (e.g., email → us***@***.com)
+- **Data changes**: Log changes in important tables (users, orders)
+- **Monitoring**: Detection of anomalous patterns (e.g., multiple failed logins)
 
-### TLS y HTTPS
-- **Todos los endpoints**: Solo HTTPS en producción
-- **HSTS**: Implementado (max-age: 31536000)
-- **Cifrado**: TLS 1.2+, prefiriendo cifrados perfectos forward
-- **Certificados**: Let's Encrypt o certificado corporativo
+### TLS and HTTPS
+- **All endpoints**: Only HTTPS in production
+- **HSTS**: Implemented (max-age: 31536000)
+- **Encryption**: TLS 1.2+, preferring forward-secure ciphers
+- **Certificates**: Let's Encrypt or corporate certificate
 
-## Protección de datos personales
+## Personal data protection
 
-### RGPD/LGPD compliance
-- **Consentimiento**: Obtener consentimiento explícito para datos personales
-- **Acceso de datos**: Endpoints para que usuarios accedan/eliminen sus datos
-- **Portabilidad de datos**: Exportar datos en formato JSON legible por máquina
-- **Retención**: Políticas de retención para datos personales (ej: 1 año)
-- **Borrado**: Eliminar datos en 30 días tras eliminación de cuenta
+### GDPR/LGPD compliance
+- **Consent**: Obtain explicit consent for personal data
+- **Data access**: Endpoints for users to access/delete their data
+- **Portability**: Export data in machine-readable JSON format
+- **Retention**: Retention policies for personal data (e.g., 1 year)
+- **Deletion**: Delete data within 30 days after account deletion
 
-### Flujo de consentimiento
-1. **Registro**: Consentimiento para marketing (checkbox separado)
-2. **Cookies**: Banner de cookies con aceptación granular
-3. **Email**: Doble opt-in para emails promocionales
-4. **Datos de terceros**: No compartir sin consentimiento explícito
+### Consent flow
+1. **Registration**: Marketing consent (separate checkbox)
+2. **Cookies**: Cookie banner with granular acceptance
+3. **Email**: Double opt-in for promotional emails
+4. **Third-party data**: No sharing without explicit consent
 
-### Retención de datos
-- **Usuarios**: Mantener por 1 año tras última actividad
-- **Pedidos**: Mantener por 5 años (contabilidad)
-- **Inventario**: Mantener por 6 meses
-- **Reseñas**: Mantener por 3 años
-- **Logs**: Mantener por 30 días
+### Data retention
+- **Users**: Retain for 1 year after last activity
+- **Orders**: Retain for 5 years (accounting)
+- **Inventory**: Retain for 6 months
+- **Reviews**: Retain for 3 years
+- **Logs**: Retain for 30 days
 
-## Seguridad de base de datos
+## Database security
 
-### Configuración de PostgreSQL
-- **SSL**: TLS obligatorio para conexiones
-- **Autenticación**: Contraseñas fuertes, LIMIT USER
-- **Permiso mínimo**: Usuarios con SOLO lectura/escritura necesarios
-- **Backups**: Cifrado AES-256, almacenados en S3
-- **Monitoreo**: Auditoría de cambios, detección de intentos de acceso
+### PostgreSQL configuration
+- **SSL**: TLS mandatory for connections
+- **Authentication**: Strong passwords, principle of least privilege
+- **Permissions**: Users with only necessary read/write permissions
+- **Backups**: AES-256 encryption, stored in S3
+- **Monitoring**: Change auditing, access attempt detection
 
 ### Access control
-- **Least privilege**: Cada usuario/módulo tiene permisos mínimos
-- **Role-based**: Usuarios específicos para operaciones
-- **Row-level**: RLS para filtrar filas por seller_id
+- **Least privilege**: Each user/module has minimum necessary permissions
+- **Role-based**: Specific users for operations
+- **Row-level**: RLS for filtering rows by seller_id
 
-## Resumen de medidas de seguridad
+## Summary of security measures
 
-1. **Autenticación**: JWT + Refresh tokens + Argon2 password hash
-2. **Autorización**: Role-based + row-level security + owner checks
-3. **Input validation**: Pydantic + sanitización + SQL injection prevention
-4. **Data protection**: HTTPS/TLS + cifrado en tránsito + HTTPS only
+1. **Authentication**: JWT + Refresh tokens + Argon2 password hash
+2. **Authorization**: Role-based + row-level security + owner checks
+3. **Input validation**: Pydantic + sanitization + SQL injection prevention
+4. **Data protection**: HTTPS/TLS + encryption in transit + HTTPS only
 5. **Access control**: JWT + seller isolation + admin override
 6. **Rate limiting**: Global + login + register + password reset limits
-7. **Audit trails**: Logs de accesos + cambios de datos + datos enmascarados
-8. **Password security**: Argon2id + salt aleatorio + hashing lento
-9. **Data retention**: Políticas según regulaciones + borrado seguro
-10. **Compliance**: RGPD/LGPD + HTTPS + GDPR-compatible
+7. **Audit trails**: Access logs + data changes + masked sensitive data
+8. **Password security**: Argon2id + random salt + slow hashing
+9. **Data retention**: Policies per regulations + secure deletion
+10. **Compliance**: GDPR/LGPD + HTTPS + GDPR-compatible
