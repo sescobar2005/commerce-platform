@@ -6,15 +6,15 @@
 - **Base URL**: `/api/v1/`
 - **Prefix**: `/api/v1`
 - **Content-Type**: `application/json` for all requests/responses
-- **Endpoints**: Plural (e.g., `/users`, `/products`, `/orders`)
-- **Query parameters**: Used for filtering, pagination, sorting
-- **Path parameters**: Used for IDs (`/users/{user_id}`, `/products/{product_id}`)
+- **Endpoints**: Plural nouns (e.g., `/users`, `/products`, `/orders`)
+- **Query parameters**: Filtering, pagination, sorting
+- **Path parameters**: Resource IDs (e.g., `/users/{user_id}`, `/products/{product_id}`)
 
 ### Versioning strategy
-- **Minor version**: Increments when new resources are added or major API changes occur
-- **Patch version**: Increments when changes are made to request/response models without breaking compatibility
-- **URL scheme**: `/api/v1` (current), `/api/v2` (future if needed)
-- **Version headers**: Not used, URL-based only
+- **Minor version**: New resources or major API changes
+- **Patch version**: Non-breaking changes to request/response models
+- **URL scheme**: `/api/v1` (current); `/api/v2` TBD
+- **Version headers**: Not used; URL-based only
 
 ### Standard response format
 ```json
@@ -53,115 +53,115 @@
 - **500 INTERNAL SERVER ERROR**: Unexpected server error
 
 ### Common error codes
-- **"NOT_FOUND"**: Resource not found
-- **"INVALID_INPUT"**: Invalid request data
-- **"UNAUTHORIZED"**: Insufficient permissions
-- **"FORBIDDEN"**: Access prohibited
-- **"CONFLICT"**: Conflict (e.g., duplicate, stock)
-- **"VALIDATION_ERROR"**: Data validation error
-- **"INTERNAL_ERROR"**: Unexpected server error
+- `"NOT_FOUND"`: Resource not found
+- `"INVALID_INPUT"`: Invalid request data
+- `"UNAUTHORIZED"`: Insufficient permissions
+- `"FORBIDDEN"`: Access prohibited
+- `"CONFLICT"`: Conflict (e.g., duplicate, stock)
+- `"VALIDATION_ERROR"`: Data validation error
+- `"INTERNAL_ERROR"`: Unexpected server error
 
 ## Endpoint organization by modules
 
 ### Authentication module (`/api/v1/auth/`)
-- `POST /api/v1/auth/register` (user registration)
-- `POST /api/v1/auth/login` (login)
-- `POST /api/v1/auth/logout` (logout)
-- `GET /api/v1/auth/me` (current profile)
-- `PUT /api/v1/auth/password` (password update)
-- `POST /api/v1/auth/refresh` (token refresh)
+- `POST /register` — User registration
+- `POST /login` — Login
+- `POST /logout` — Logout
+- `GET /me` — Current user profile
+- `PUT /password` — Password update
+- `POST /refresh` — Token refresh
 
 ### User module (`/api/v1/users/`)
-- `GET /api/v1/users/{user_id}` (get user profile)
-- `PUT /api/v1/users/{user_id}` (update profile)
-- `DELETE /api/v1/users/{user_id}` (delete account)
-- `GET /api/v1/users/{user_id}/orders` (user orders)
+- `GET /{user_id}` — Get user profile
+- `PUT /{user_id}` — Update profile
+- `DELETE /{user_id}` — Delete account
+- `GET /{user_id}/orders` — User orders
 
 ### Seller module (`/api/v1/sellers/`)
-- `POST /api/v1/sellers/` (register new seller)
-- `GET /api/v1/sellers/{seller_id}` (get seller)
-- `PUT /api/v1/sellers/{seller_id}` (update seller)
-- `GET /api/v1/sellers/{seller_id}/stores` (seller's stores)
-- `GET /api/v1/sellers/{seller_id}/stats` (seller statistics)
+- `POST /` — Register new seller
+- `GET /{seller_id}` — Get seller
+- `PUT /{seller_id}` — Update seller
+- `GET /{seller_id}/stores` — Seller's stores
+- `GET /{seller_id}/stats` — Seller statistics
 
 ### Store module (`/api/v1/stores/`)
-- `POST /api/v1/stores/` (create store)
-- `GET /api/v1/stores/{store_id}` (get store)
-- `PUT /api/v1/stores/{store_id}` (update store)
-- `DELETE /api/v1/stores/{store_id}` (delete store)
-- `GET /api/v1/stores/{store_id}/products` (store's products)
-- `GET /api/v1/stores/{store_id}/stats` (store statistics)
+- `POST /` — Create store
+- `GET /{store_id}` — Get store
+- `PUT /{store_id}` — Update store
+- `DELETE /{store_id}` — Delete store
+- `GET /{store_id}/products` — Store's products
+- `GET /{store_id}/stats` — Store statistics
 
 ### Category module (`/api/v1/categories/`)
-- `POST /api/v1/categories/` (create category)
-- `GET /api/v1/categories/{category_id}` (get category)
-- `PUT /api/v1/categories/{category_id}` (update category)
-- `DELETE /api/v1/categories/{category_id}` (delete category)
-- `GET /api/v1/categories/` (list categories with pagination)
-- `GET /api/v1/categories/{category_id}/products` (category's products)
+- `POST /` — Create category
+- `GET /{category_id}` — Get category
+- `PUT /{category_id}` — Update category
+- `DELETE /{category_id}` — Delete category
+- `GET /` — List categories with pagination
+- `GET /{category_id}/products` — Category's products
 
 ### Product module (`/api/v1/products/`)
-- `POST /api/v1/products/` (create product)
-- `GET /api/v1/products/{product_id}` (get product)
-- `PUT /api/v1/products/{product_id}` (update product)
-- `DELETE /api/v1/products/{product_id}` (delete product)
-- `GET /api/v1/products/` (list products with filters)
-- `GET /api/v1/products/search` (advanced search)
-- `POST /api/v1/products/{product_id}/images` (upload image)
-- `DELETE /api/v1/products/{product_id}/images/{image_id}` (delete image)
+- `POST /` — Create product
+- `GET /{product_id}` — Get product
+- `PUT /{product_id}` — Update product
+- `DELETE /{product_id}` — Delete product
+- `GET /` — List products with filters
+- `GET /search` — Advanced search
+- `POST /{product_id}/images` — Upload image
+- `DELETE /{product_id}/images/{image_id}` — Delete image
 
 ### Cart module (`/api/v1/carts/`)
-- `POST /api/v1/carts/` (create cart)
-- `GET /api/v1/carts/{cart_id}` (get cart)
-- `PUT /api/v1/carts/{cart_id}` (update cart)
-- `DELETE /api/v1/carts/{cart_id}` (delete cart)
-- `POST /api/v1/carts/{cart_id}/items` (add item to cart)
-- `PUT /api/v1/carts/{cart_id}/items/{item_id}` (update item)
-- `DELETE /api/v1/carts/{cart_id}/items/{item_id}` (remove item)
-- `POST /api/v1/carts/{cart_id}/validate` (validate cart)
-- `POST /api/v1/carts/{cart_id}/merge/{guest_cart_id}` (merge carts)
+- `POST /` — Create cart
+- `GET /{cart_id}` — Get cart
+- `PUT /{cart_id}` — Update cart
+- `DELETE /{cart_id}` — Delete cart
+- `POST /{cart_id}/items` — Add item to cart
+- `PUT /{cart_id}/items/{item_id}` — Update item
+- `DELETE /{cart_id}/items/{item_id}` — Remove item
+- `POST /{cart_id}/validate` — Validate cart
+- `POST /{cart_id}/merge/{guest_cart_id}` — Merge carts
 
 ### Order module (`/api/v1/orders/`)
-- `POST /api/v1/orders/` (create order)
-- `GET /api/v1/orders/{order_id}` (get order)
-- `GET /api/v1/orders/` (list user's orders)
-- `PUT /api/v1/orders/{order_id}/status` (update status)
-- `POST /api/v1/orders/{order_id}/cancel` (cancel order)
-- `GET /api/v1/orders/{order_id}/items` (order's items)
-- `GET /api/v1/orders/{order_id}/subitems` (order's sub-orders)
+- `POST /` — Create order
+- `GET /{order_id}` — Get order
+- `GET /` — List user's orders
+- `PUT /{order_id}/status` — Update status
+- `POST /{order_id}/cancel` — Cancel order
+- `GET /{order_id}/items` — Order's items
+- `GET /{order_id}/subitems` — Order's sub-orders
 
 ### Payment module (`/api/v1/payments/`)
-- `POST /api/v1/payments/` (process payment)
-- `GET /api/v1/payments/{payment_id}` (get payment)
-- `GET /api/v1/payments/{order_id}` (order's payments)
-- `POST /api/v1/payments/{payment_id}/refund` (process refund)
+- `POST /` — Process payment (simulated)
+- `GET /{payment_id}` — Get payment
+- `GET /{order_id}` — Order's payments
+- `POST /{payment_id}/refund` — Process refund (simulated)
 
 ### Commission module (`/api/v1/commissions/`)
-- `GET /api/v1/commissions/{commission_id}` (get commission)
-- `GET /api/v1/sellers/{seller_id}/commissions` (seller's commissions)
-- `POST /api/v1/commissions/{commission_id}/mark-paid` (mark as paid)
+- `GET /{commission_id}` — Get commission
+- `GET /sellers/{seller_id}/commissions` — Seller's commissions
+- `POST /{commission_id}/mark-paid` — Mark commission as paid
 
 ### Review module (`/api/v1/reviews/`)
-- `POST /api/v1/reviews/products` (create product review)
-- `GET /api/v1/reviews/products/{product_id}` (product's reviews)
-- `POST /api/v1/reviews/stores` (create store review)
-- `GET /api/v1/reviews/stores/{store_id}` (store's reviews)
-- `PUT /api/v1/reviews/{review_id}` (update review)
-- `DELETE /api/v1/reviews/{review_id}` (delete review)
+- `POST /products` — Create product review
+- `GET /products/{product_id}` — Product's reviews
+- `POST /stores` — Create store review
+- `GET /stores/{store_id}` — Store's reviews
+- `PUT /{review_id}` — Update review
+- `DELETE /{review_id}` — Delete review
 
 ### Notification module (`/api/v1/notifications/`)
-- `GET /api/v1/notifications/` (list notifications)
-- `GET /api/v1/notifications/{notification_id}` (get notification)
-- `PUT /api/v1/notifications/{notification_id}/read` (mark as read)
-- `DELETE /api/v1/notifications/{notification_id}` (delete notification)
+- `GET /` — List notifications
+- `GET /{notification_id}` — Get notification
+- `PUT /{notification_id}/read` — Mark as read
+- `DELETE /{notification_id}` — Delete notification
 
 ### Admin module (`/api/v1/admin/`)
-- `GET /api/v1/admin/stats` (general statistics)
-- `GET /api/v1/admin/users` (list users)
-- `GET /api/v1/admin/sellers` (list sellers)
-- `GET /api/v1/admin/orders` (list orders)
-- `GET /api/v1/admin/revenue` (revenue statistics)
-- `GET /api/v1/admin/inventory` (inventory audit)
+- `GET /stats` — General statistics
+- `GET /users` — List users
+- `GET /sellers` — List sellers
+- `GET /orders` — List orders
+- `GET /revenue` — Revenue statistics
+- `GET /inventory` — Inventory audit
 
 ## Common filtering and query parameters
 
@@ -196,26 +196,26 @@
 
 ## Data validation formats
 
-### Request schemas (use Pydantic)
+### Request schemas (Pydantic)
 - **UUIDs**: ISO 8601 for datetime, UUID for IDs
 - **Emails**: Standard format
 - **Numbers**: Range validation (price, quantity)
 - **Strings**: Maximum lengths, regex for slugs
-- **Bools**: Standard boolean values
+- **Booleans**: Standard boolean values
 
 ### Standard error messages
-- **"REQUIRED_FIELD"**: Required field missing
-- **"INVALID_FORMAT"**: Invalid format
-- **"DUPLICATE_ENTRY"**: Duplicate entry
-- **"INSUFFICIENT_STOCK"**: Insufficient stock
-- **"UNAUTHORIZED_ACCESS"**: Insufficient permissions
-- **"RATE_LIMIT_EXCEEDED"**: Rate limit exceeded
+- `"REQUIRED_FIELD"`: Required field missing
+- `"INVALID_FORMAT"`: Invalid format
+- `"DUPLICATE_ENTRY"`: Duplicate entry
+- `"INSUFFICIENT_STOCK"`: Insufficient stock
+- `"UNAUTHORIZED_ACCESS"`: Insufficient permissions
+- `"RATE_LIMIT_EXCEEDED"`: Rate limit exceeded
 
 ## Security points
 
 ### Authorization requirements
 - **JWT**: Token in `Authorization: Bearer {token}` header
-- **Seller isolation**: All routes involving stores validate seller_id
+- **Seller isolation**: Routes involving stores validate `seller_id`
 - **Role-based**: Some endpoints require specific roles
 
 ### Input validation
@@ -225,9 +225,11 @@
 - **Headers**: Validated (Authorization, Content-Type)
 
 ### Output validation
-- **Sensitive fields**: Removed from responses (e.g., password_hash)
-- **Filtered data**: Only appropriate data shown per role
-- **Files**: S3 URLs, not binary data
+- **Sensitive fields**: Removed from responses (e.g., `password_hash`)
+- **Filtered data**: Only role-appropriate data shown
 
-## Protocols
-Here
+## Pending decisions (TBD)
+
+- **API v2 migration**: Timing and breaking changes TBD
+- **Rate limit configuration**: Exact limits per endpoint TBD
+- **File upload storage**: S3 or alternative TBD
