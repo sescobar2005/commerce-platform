@@ -1,208 +1,214 @@
 # PROGRESS.md
 
-## Estado inicial del proyecto
+## Initial project status
 
-### Iteración actual
-- **Fase actual**: 1 (Fundamentos)
-- **Fecha de inicio**: 2026-11-16
-- **Progreso**: 0% (justo comenzando)
+### Current iteration
+- **Current phase**: 1 (Fundamentals)
+- **Start date**: 2026-11-16
+- **Progress**: 0% (just starting)
 
-### Tareas completadas
+### Completed tasks
 
-#### Documentación creada
-- [x] **ARCHITECTURE.md**: Arquitectura general, módulos, responsabilidades, estrategia multivendedor
-- [x] **DATABASE.md**: Entidades principales, relaciones, responsabilidades, diseño de inventario
-- [x] **API_SPECIFICATION.md**: Convenciones de API, endpoints organizados por módulos, formato de request/response
-- [x] **SECURITY.md**: Autenticación JWT, autorización, Argon2, aislamiento de datos, validación de entradas
-- [ ] **DEVELOPMENT_PLAN.md**: Fases de desarrollo, orden de implementación, plan de testing
-- [ ] **PROGRESS.md**: Tracking de progreso (este archivo)
+#### Documentation created
+- [x] **ARCHITECTURE.md**: System architecture, modules, responsibilities, multi-vendor strategy
+- [x] **DATABASE.md**: Main entities, relationships, responsibilities, inventory design
+- [x] **API_SPECIFICATION.md**: REST API conventions, endpoints organized by modules, request/response format
+- [x] **SECURITY.md**: JWT authentication, authorization, Argon2, data isolation, input validation
+- [ ] **DEVELOPMENT_PLAN.md**: Development phases, implementation order, testing plan
+- [ ] **PROGRESS.md**: Project tracking (this file)
 
-#### Estructura del proyecto
-- [x] Directorio raíz creado: `S:\Proyectos\Plataforma_Comercio\`
-- [ ] backend/ (pendiente de creación)
-- [ ] frontend/ (por otro equipo)
-- [ ] tests/ (pendiente de creación)
-- [ ] docs/ (pendiente de creación)
-- [ ] infrastructure/ (pendiente de creación)
+#### Project structure
+- [x] Root directory created: `S:\Proyectos\Plataforma_Comercio\`
+- [ ] backend/ (pending creation)
+- [ ] frontend/ (by another team)
+- [ ] tests/ (pending creation)
+- [ ] docs/ (pending creation)
+- [ ] infrastructure/ (pending creation)
 
-### Estado de decisiones
+### Decision status
 
-#### Deciones establecidas
-- [x] **Monolito modular**: Backend organizado en 13 módulos
-- [x] **JWT authentication**: Usando RS256 con tokens de 15 minutos
-- [x] **Argon2 para passwords**: Memory cost 64MB, iterations 3, parallelism 4
-- [x] **Aislamiento de datos**: Cada seller solo puede acceder a sus propios datos
-- [x] **Cálculo de comisiones**: Por backend, validando importes enviados por cliente
-- [x] **Subpedidos**: Pedido principal + subpedidos independientes por vendedor
-- [x] **Simulación de pagos**: Pagos simulados inicialmente, para cambios futuros
-- [x] **Modular organization**: 13 módulos con responsabilidades claras
+#### Decisions established
+- [x] **Modular monolith**: Backend organized into 13 modules
+- [x] **JWT authentication**: Using RS256 with 15-minute tokens
+- [x] **Argon2 for passwords**: 64MB memory, 3 iterations, 4 parallelism
+- [x] **Data isolation**: Each seller can only access their own data
+- [x] **Commission calculation**: By backend, validating client-sent amounts
+- [x] **Sub-orders**: Main order + independent sub-orders per seller
+- [x] **Payment simulation**: Simulated payments initially, migration planned
+- [x] **Modular organization**: 13 modules with clear responsibilities
 
-#### Decisiones pendientes de validación
-- [ ] **Tecnologías específicas**: Las tecnologías listadas (FastAPI, SQLAlchemy, Next.js) necesitan validación
-- [ ] **Principios de base de datos**: Diseñar índices específicos, reglas de trigger, constraints
-- [ ] **URLs de API**: Definir rutas y nombres de endpoints específicos
-- [ ] **Configuración de features**: Definir flags para simulación de pagos vs real
-- [ ] **Estrategia de caché**: Definir qué cachear (carritos, productos, etc.)
-- [ ] **Configuración de mensajería**: Configurar sistema de notificaciones
-- [ ] **Principios de monitoreo**: Definir métricas y alertas
+#### Decisions pending validation
+- [ ] **Specific technologies**: Technologies listed (FastAPI, SQLAlchemy, Next.js) need validation
+- [ ] **Database principles**: Design specific indexes, triggers, constraints
+- [ ] **API URLs**: Define specific routes and endpoint names
+- [ ] **Feature configuration**: Define flags for simulated vs real payments
+- [ ] **Caching strategy**: Define what to cache (carts, products, etc.)
+- [ ] **Messaging setup**: Configure notification system
+- [ ] **Monitoring principles**: Define metrics and alerts
 
-### Tareas pendientes
+### Pending tasks
 
-#### Phase 1 (Fase actual - Fundamentos)
-- [ ] Configurar proyecto
-- [ ] Configurar base de datos
-- [ ] Implementar módulo de autenticación
-- [ ] Configurar Alembic
-- [ ] Establecer tests basicos
+#### Phase 1 (Current phase - Fundamentals)
+- [ ] Configure project
+- [ ] Configure database
+- [ ] Implement authentication module
+- [ ] Configure Alembic
+- [ ] Establish basic tests
 
-#### Phase 2 (Módulos básicos)
-- [ ] Implementar módulo de usuarios
-- [ ] Implementar módulo de vendedores
-- [ ] Implementar módulo de tiendas
-- [ ] Implementar módulo de categorías
+#### Phase 2 (Basic modules)
+- [ ] Implement user module
+- [ ] Implement seller module
+- [ ] Implement store module
+- [ ] Implement category module
 
-#### Phase 3 (Catálogo de productos)
-- [ ] Implementar módulo de productos
-- [ ] Implementar módulo de inventario
-- [ ] Implementar módulo de carritos
+#### Phase 3 (Product catalog)
+- [ ] Implement product module
+- [ ] Implement inventory module
+- [ ] Implement cart module
 
-#### Phase 4 (Pedidos y pagos)
-- [ ] Implementar módulo de pedidos
-- [ ] Implementar módulo de pagos
-- [ ] Implementar módulo de comisiones
+#### Phase 4 (Orders and payments)
+- [ ] Implement order module
+- [ ] Implement payment module
+- [ ] Implement commission module
 
-#### Phase 5 (Características adicionales)
-- [ ] Implementar módulo de reseñas
-- [ ] Implementar módulo de notificaciones
-- [ ] Implementar módulo de admin
+#### Phase 5 (Additional features)
+- [ ] Implement review module
+- [ ] Implement notification module
+- [ ] Implement admin module
 
-#### Phase 6 (Optimización y testing)
-- [ ] Implementar testing completo
-- [ ] Optimizar rendimiento
-- [ ] Completar documentación
+#### Phase 6 (Optimization and testing)
+- [ ] Implement complete testing
+- [ ] Optimize performance
+- [ ] Complete documentation
 
-### Riesgos y bloqueos
+### Risks and blockages
 
-#### Bloqueos actuales
-- [ ] No hay bloqueos actuales
+#### Current blockages
+- [ ] No current blockages
 
-#### Riesgos identificados
-1. **Complejidad técnica**: Monolito modular con 13 módulos puede ser demasiado
-2. **Aislamiento de datos**: Implementar RLS correctamente puede ser difícil
-3. **Control de inventario**: Sistema distribuido con almacenamiento local puede causar inconsistencias
-4. **Cálculo de comisiones**: Validación por backend de importes enviados por cliente puede ser costoso
-5. **Cambio de pagos simulados**: Plan para pagos reales puede ser disruptivo
+#### Identified risks
+1. **Technical complexity**: Modular monolith with 13 modules may be too much
+2. **Data isolation**: Implementing RLS correctly may be difficult
+3. **Inventory control**: Distributed system with local storage may cause inconsistencies
+4. **Commission calculation**: Backend validation of client-sent amounts may be expensive
+5. **Payment change**: Migration from simulated to real payments may be disruptive
 
-#### Mitigación
-- **Complejidad**: Revisar número de módulos por fase
-- **Aislamiento**: Testear RLS exhaustivamente
-- **Inventario**: Implementar control de concurrencia optimista
-- **Comisiones**: Validar calculation por backend en cada pedido
-- **Pagos**: Mantener pagos simulados por mas tiempo
+#### Mitigation
+- **Complexity**: Review number of modules per phase
+- **Isolation**: Test RLS exhaustively
+- **Inventory**: Implement optimistic concurrency control
+- **Commissions**: Validate backend calculation in every order
+- **Payments**: Maintain simulated payments longer
 
-### Cronograma
+### Schedule
 
-#### Iteración actual
-- **Semana 1**: Comenzar con configuración del proyecto
-- **Semana 2**: Configurar base de datos y autenticación
-- **Semana 3**: Implementar módulos de users y sellers
+#### Current iteration
+- **Week 1**: Start with project configuration
+- **Week 2**: Configure database and authentication
+- **Week 3**: Implement users and sellers modules
 
-#### Próximos milestones
-- **Milestone 1**: Inicio de semana 3 (fase 1 completada)
-- **Milestone 2**: Semana 5 (fase 2 completada)
-- **Milestone 3**: Semana 7 (fase 3 completada)
-- **Milestone 4**: Semana 9 (fase 4 completada)
-- **Milestone 5**: Semana 11 (fase 5 completada)
-- **Milestone 6**: Semana 13 (fase 6 completada)
+#### Next milestones
+- **Milestone 1**: Start of Week 3 (Phase 1 complete)
+- **Milestone 2**: Week 5 (Phase 2 complete)
+- **Milestone 3**: Week 7 (Phase 3 complete)
+- **Milestone 4**: Week 9 (Phase 4 complete)
+- **Milestone 5**: Week 11 (Phase 5 complete)
+- **Milestone 6**: Week 13 (Phase 6 complete)
 
-### Estado de comunicación
+### Communication status
 
-#### Canales
-- **Slack**: #plataforma-comercio (para equipo)
-- **GitHub**: Issues y PRs para seguimiento
-- **Board**: Notificaciones entre módulos
+#### Channels
+- **Slack**: #plataforma-comercio (for team)
+- **GitHub**: Issues and PRs for tracking
+- **Board**: Notifications between modules
 
-#### Requerimientos de revisión
-- **Requerimientos**: Todas las PRs requieren aprobación por modulo owner
-- **Testing**: Todos los cambios requieren tests
-- **Security**: Escaneo de seguridad en cada PR
+#### Review requirements
+- **Requirements**: All PRs require approval by module owner
+- **Testing**: All changes require tests
+- **Security**: Security scan on every PR
 
-### Próximos pasos
+### Next steps
 
-#### Esta semana
-1. [ ] Completar DEVELOPMENT_PLAN.md
-2. [ ] Completar PROGRESS.md
-3. [ ] Configurar pipeline CI/CD
-4. [ ] Configurar base de datos local
-5. [ ] Implementar auth-module base
-6. [ ] Escribir tests para autenticación
+#### This week
+1. [ ] Complete DEVELOPMENT_PLAN.md
+2. [ ] Complete PROGRESS.md
+3. [ ] Configure CI/CD pipeline
+4. [ ] Configure local database
+5. [ ] Implement base auth module
+6. [ ] Write tests for authentication
 
-#### Próxima semana
-1. [ ] Escribir tests de integración
-2. [ ] Implementar user-module
-3. [ ] Implementar seller-module
-4. [ ] Completar testing de auth
-5. [ ] Escribir documentación de API
+#### Next week
+1. [ ] Write integration tests
+2. [ ] Implement user module
+3. [ ] Implement seller module
+4. [ ] Complete auth testing
+5. [ ] Write API documentation
 
-### Verificación
+### Verification
 
-#### Objetivos alcanzados
-- [x] Todos los 5 documentos base creados
-- [x] Arquitectura bien documentada
-- [x] Base de datos modelada
-- [x] Plan de desarrollo completo
-- [x] Security strategy documentada
-- [ ] Testing plan completado
+#### Objectives achieved
+- [x] All 5 base documents created
+- [x] Architecture well documented
+- [x] Database modeled
+- [x] Development plan complete
+- [x] Security strategy documented
+- [ ] Testing plan completed
 
-#### Progreso vs plan
-- [ ] En linea con cronograma
-- [ ] Documentación completa
-- [ ] Architecture bien pensada
-- [ ] Dependencies identificadas
+#### Progress vs plan
+- [ ] On schedule
+- [ ] Documentation complete
+- [ ] Architecture well thought out
+- [ ] Dependencies identified
 
-### Notas
+### Notes
 
-#### Actualizaciones futuras
-- [ ] Actualizar lista de tecnologías
-- [ ] Agregar principles de base de datos específicos
-- [ ] Definir URLs y nombres de endpoints
-- [ ] Configurar infrastructure
-- [ ] Configurar CI/CD
+#### Future updates
+- [ ] Update technology list
+- [ ] Add specific database principles
+- [ ] Define URLs and endpoint names
+- [ ] Configure infrastructure
+- [ ] Configure CI/CD
 
-#### Decisiones que necesitan aprobacion
-- [ ] Tecnologías de backend específicas
-- [ ] Tecnologías de frontend (por otro equipo)
-- [ ] Proporcionamiento de base de datos
-- [ ] Configuración de CI/CD
-- [ ] Herramientas de testing específicas
+#### Decisions needing approval
+- [ ] Backend technologies specific
+- [ ] Frontend technologies (by other team)
+- [ ] Database provision
+- [ ] CI/CD configuration
+- [ ] Specific testing tools
 
-## Resumen de iteración actual
+## Current iteration summary
 
-**Iteración actual (Fase 1: Fundamentos)**: Hemos creado 4 de los 6 documentos base requeridos (ARCHITECTURE.md, DATABASE.md, API_SPECIFICATION.md, SECURITY.md). El desarrollo ha comenzado con el diseño arquitectónico, modelado de base de datos y planificación de seguridad. Las tecnologías especificadas (FastAPI, SQLAlchemy, PostgreSQL, Next.js) son consideradas pero necesitan validación adicional.
+**Current iteration (Phase 1: Fundamentals)**: We have created 4 of the 6 required base documents (ARCHITECTURE.md, DATABASE.md, API_SPECIFICATION.md, SECURITY.md). Development has started with architectural design, database modeling, and security planning. The technologies specified (FastAPI, SQLAlchemy, PostgreSQL, Next.js) are considered but need additional validation.
 
-**Decisiones principales establecidas**:
-- Arquitectura: Monolito modular con 13 módulos
-- Autenticación: JWT + Argon2
-- Autorización: Role-based + seller isolation
-- Pedidos: Sistema de subpedidos con cálculo por backend
-- Pagos: Simulación inicialmente, migración planificada
-- Base de datos: PostgreSQL con RLS y diseño multivendedor
+**Main established decisions**:
+- Architecture: Modular monolith with 13 modules
+- Authentication: JWT + Argon2
+- Authorization: Role-based + seller isolation
+- Orders: Sub-order system with backend calculation
+- Payments: Simulation initially, migration planned
+- Database: PostgreSQL with RLS and multi-vendor design
 
-**Decisiones principales pendientes**:
-- Validación específica de tecnologías
-- Principles de base de datos específicos
-- URLs y nombres de endpoints
-- Configuración de features
-- Estrategia de caché
-- Configuración de mensajería
+**Main decisions pending**:
+- Specific technology validation
+- Specific database principles
+- URLs and endpoint names
+- Feature configuration
+- Caching strategy
+- Messaging setup
 
-**Tareas pendientes**:
-- Completar DEVELOPMENT_PLAN.md y PROGRESS.md
-- Configurar pipeline CI/CD
-- Configurar base de datos local
-- Implementar auth-module base
-- Escribir tests basicos
+**Pending tasks**:
+- Complete DEVELOPMENT_PLAN.md and PROGRESS.md
+- Configure CI/CD pipeline
+- Configure local database
+- Implement base auth module
+- Write basic tests
 
-**Progreso**: 2 documentos (ARCHITECTURE.md, DATABASE.md) completados, 4 de 6 documentaciones base creados. En linea con cronograma para iteración actual (Fase 1). No hay bloqueos actuales.
+**Progress**: 2 documents (ARCHITECTURE.md, DATABASE.md) completed, 4 of 6 base documentation created. On schedule for current iteration (Phase 1). No current blockages.
 
-**Próximos pasos**: Completar documentación restante, configurar desarrollo, comenzar con modules base.
+**Next steps**: Complete remaining documentation, configure development environment, start with base modules.
+
+## RESUME
+
+The current iteration (Phase 1: Fundamentals) is underway with 4 of the 6 essential documentation files created. The architectural foundation has been established with clear technical specifications, database modeling, API conventions, and security protocols. The project is aligned with the planned development schedule and is ready to proceed to the implementation phase. Key decisions have been made regarding the modular monolithic architecture, JWT authentication with Argon2, role-based authorization, multi-vendor data isolation, and a comprehensive 6-phase development roadmap.
+
+The team is prepared to begin implementing the authentication and user management modules, establishing the core technical foundation for the Plataforma de Comercio system. This initial phase sets the stage for building a robust, secure, and scalable e-commerce platform capable of supporting multiple vendors while maintaining data integrity and user experience standards.
