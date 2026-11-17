@@ -136,3 +136,15 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Commit hashes | `d2fb8e7` (password service), `cf0927c` (argon2 exception imports fix), `102bb89` (salt_len parameter fix), `42e77fe` (Type.ID enum fix), `b82c59c` (unit tests) |
 | Observations | Implemented PasswordService class with hash_password() and verify_password() methods. Argon2id configuration per SECURITY.md: time_cost=3, memory_cost=65536 (64MB), parallelism=4, hash_len=32, salt_len=16, type=Type.ID. All boolean fields use consistent Python/database defaults. Created 22 unit tests covering hash creation, verification (correct/incorrect), input validation, configuration parameters, salt randomness. No plaintext password storage, no salt reuse, safe error handling for invalid/malformed hashes. No JWT, no authentication endpoints, no ORM model modifications, no migrations. |
 
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-17 |
+| Phase | Phase 1 (Fundamentals) — JWT token service |
+| Completed unit | JWT token service with RS256 RSA key pair + unit tests |
+| Files affected | `back/src/core/security/jwt.py`, `back/src/core/security/__init__.py`, `back/src/core/config.py`, `back/.env.example`, `back/.gitignore`, `back/tests/test_jwt_unit.py` |
+| Tests or checks | 17/17 unit tests pass; Python syntax verified via `py_compile`; RS256 algorithm verified; token type separation verified; signature verification verified; expiration verified; malformed token handling verified |
+| Commit hashes | `d838d75` (config.py JWT settings), `a04a094` (.gitignore PEM patterns), `c97d71d` (JWT service), `a104fff` (unit tests) |
+| Observations | Implemented JWTService class with create_access_token(), create_refresh_token(), verify_access_token(), verify_refresh_token(), verify_token() methods. RS256 asymmetric encryption using RSA private key for signing, public key for verification. Keys loaded from PEM files via JWT_PRIVATE_KEY_PATH and JWT_PUBLIC_KEY_PATH environment variables. JWT_ALGORITHM=RS256 enforced exclusively. Token payload includes sub (user_id), username, role, iat, exp, type claims. Access token expiry: 15 minutes; Refresh token expiry: 7 days. Token type separation: access tokens rejected as refresh tokens and vice versa. Malformed, expired, incorrectly signed tokens safely rejected. No plaintext secrets in logs or code. JWT_SECRET_KEY removed from settings and .env.example. .gitignore updated with *.pem, *.key, *.pub, *.asc patterns. Created 17 unit tests covering token generation, validation, expiration, signature verification, type separation, malformed tokens, invalid signatures, configuration errors. |
+

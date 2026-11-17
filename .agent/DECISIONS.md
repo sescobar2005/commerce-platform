@@ -15,6 +15,7 @@
 | ARCH-005 | Price calculation | Backend validates all price calculations; never trust client | Prevents fraud and ensures consistency | 2026-11-16 | Approved |
 | ARCH-006 | Payment model | Simulated initially; migration to real payments TBD | Reduces initial complexity | 2026-11-16 | Approved |
 | ARCH-007 | API versioning | API v1 via URL prefix (`/api/v1`); v2 TBD | Standard REST practice | 2026-11-16 | Approved |
+| SEC-005 | JWT key management | RSA key pair from PEM files via JWT_PRIVATE_KEY_PATH and JWT_PUBLIC_KEY_PATH environment variables; JWT_SECRET_KEY removed | Asymmetric RS256 signing requires key pair; private key never committed | 2026-11-17 | Approved |
 
 ## Unresolved Questions / Pending Decisions
 
