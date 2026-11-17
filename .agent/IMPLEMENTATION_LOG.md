@@ -209,3 +209,29 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Observations | Implemented UserRegisterRequest (username, email, password), UserRegisterResponse (user_id, username, email, is_seller, is_verified, created_at), UserLoginRequest (username, password), TokenResponse (access_token, refresh_token, token_type), UserLoginResponse (access_token, refresh_token, token_type, user), UserResponse (user_id, username, email, is_seller, is_verified, created_at). UserResponse excludes password_hash. All schemas use Pydantic validation with EmailStr for email, max_length constraints matching DB schema. No JWT generation, no password hashing, no database operations, no endpoints. |
 
 
+
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-17 |
+| Phase | Phase 1 (Fundamentals) — Authentication dependencies |
+| Completed unit | User registration endpoint (POST /api/v1/auth/register) + unit tests |
+| Files affected | \ack/src/core/auth/router.py\, \ack/src/core/auth/__init__.py\, \ack/tests/test_auth_router_unit.py\ |
+| Tests or checks | 5/5 unit tests pass; 63/63 total security/auth tests pass; Python syntax verified via \py_compile\ |
+| Commit hashes | 957e42\ (registration endpoint), \b0f58c\ (unit tests) |
+| Observations | Implemented POST /api/v1/auth/register endpoint. Accepts UserRegisterRequest (username, email, password). Checks username and email uniqueness (409 CONFLICT if duplicate). Hashes password with PasswordService (Argon2id). Creates User ORM instance with is_seller=False, is_verified=False. Persists via SQLAlchemy session with commit. Returns UserRegisterResponse (no password_hash). Handles IntegrityError with rollback and 409 CONFLICT. 5 unit tests covering successful registration, duplicate username, duplicate email, integrity error rollback, password hashing. No JWT generation during registration (per task scope).
+
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-17 |
+| Phase | Phase 1 (Fundamentals) — Authentication dependencies |
+| Completed unit | User registration endpoint (POST /api/v1/auth/register) + unit tests |
+| Files affected | `back/src/core/auth/router.py`, `back/src/core/auth/__init__.py`, `back/tests/test_auth_router_unit.py` |
+| Tests or checks | 5/5 unit tests pass; 63/63 total security/auth tests pass; Python syntax verified via `py_compile` |
+| Commit hashes | `3957e42` (registration endpoint), `bb0f58c` (unit tests) |
+| Observations | Implemented POST /api/v1/auth/register endpoint. Accepts UserRegisterRequest (username, email, password). Checks username and email uniqueness (409 CONFLICT if duplicate). Hashes password with PasswordService (Argon2id). Creates User ORM instance with is_seller=False, is_verified=False. Persists via SQLAlchemy session with commit. Returns UserRegisterResponse (no password_hash). Handles IntegrityError with rollback and 409 CONFLICT. 5 unit tests covering successful registration, duplicate username, duplicate email, integrity error rollback, password hashing. No JWT generation during registration (per task scope).

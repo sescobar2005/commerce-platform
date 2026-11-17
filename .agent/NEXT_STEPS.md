@@ -8,7 +8,7 @@
 
 **Authentication module endpoints - Logout** — User logout (`POST /api/v1/auth/logout`).
 
-This unit builds on the completed password security service (Argon2id), JWT token service (RS256), authentication Pydantic schemas, registration endpoint, and login endpoint.
+This unit builds on the completed password security service (Argon2id), JWT token service (RS256), authentication Pydantic schemas, registration endpoint, login endpoint, and authentication dependencies (get_current_user).
 
 ## Dependencies
 
@@ -24,6 +24,7 @@ This unit builds on the completed password security service (Argon2id), JWT toke
 | Authentication Pydantic schemas + unit tests | Complete |
 | Registration endpoint + unit tests | Complete |
 | Login endpoint + unit tests | Complete |
+| Authentication dependencies (get_current_user) + unit tests | Complete |
 | Psycopg 3 driver dependency | Complete |
 | Local PostgreSQL instance | Provisioned |
 | Development database (`plataforma_comercio_dev`) | Created and migrated |
@@ -37,6 +38,7 @@ This unit builds on the completed password security service (Argon2id), JWT toke
 - Authentication schemas complete and tested
 - Registration endpoint complete and tested
 - Login endpoint complete and tested
+- Authentication dependencies complete and tested
 - JWT RSA key files configured at paths specified in `JWT_PRIVATE_KEY_PATH` and `JWT_PUBLIC_KEY_PATH`
 
 ## Completion Criteria
