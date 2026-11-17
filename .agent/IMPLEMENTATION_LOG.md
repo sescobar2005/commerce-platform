@@ -75,3 +75,15 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Tests or checks | Python syntax verified via `py_compile` for all files; import/runtime tests not possible (dependencies not installed) |
 | Commit hashes | `5d17e69` (alembic.ini), `23d10dc` (env.py), `a1a6b38` (unit tests) |
 | Observations | Implemented alembic.ini with script_location=back/alembic and sqlalchemy.url=%(DATABASE_URL)s. Implemented env.py using Base.metadata as target_metadata, reads DATABASE_URL from pydantic-settings settings, supports offline and online modes. Created 7 unit tests covering config loading, SQLALCHEMY URL, script location, metadata integration, settings configuration. No migration scripts created (per task scope - no business models yet). Real DB connection not verified (PostgreSQL not provisioned). |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-16 |
+| Phase | Phase 1 (Fundamentals) — Database models |
+| Completed unit | SQLAlchemy declarative models for users, sellers, stores, categories, products with relationships |
+| Files affected | `back/src/core/models/__init__.py`, `back/src/core/models/user.py`, `back/src/core/models/seller.py`, `back/src/core/models/store.py`, `back/src/core/models/category.py`, `back/src/core/models/product.py`, `back/tests/test_models_unit.py` |
+| Tests or checks | Python syntax verified via `py_compile` for all files; import/runtime tests not possible (dependencies not installed) |
+| Commit hashes | `0f058ac` (User + Seller models), `98436eb` (Store model), `50e5169` (Category model), `ff424f2` (Product model + updated Store/Category), `935200d` (model unit tests) |
+| Observations | Implemented User model (user_id PK, username, email, password_hash, is_seller, is_verified, created_at, last_login_at, preferences_json; 1:1 with Seller). Implemented Seller model (seller_id PK FK→users, store_name, business_name, tax_id, payment_info_json, bank_account, is_verified, created_at, last_login_at; 1:1 with User, 1:many with Store). Implemented Store model (store_id PK, seller_id FK, name, description, slug, logo_url, cover_image_url, is_active, created_at, updated_at; many:1 with Seller, 1:many with Product). Implemented Category model (category_id PK, name, description, slug, parent_id self-FK, level, path, is_active, created_at; self-referential hierarchy, 1:many with Product). Implemented Product model (product_id PK, store_id FK, category_id FK, name, description, price, cost, sku, stock, is_active, images_urls, created_at, updated_at; many:1 with Store and Category). All models use SQLAlchemy 2.0 Mapped/mapped_column conventions, inherit from Base. Created 16 unit tests covering model creation, defaults, repr, metadata registration, in-memory table creation. |

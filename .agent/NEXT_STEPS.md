@@ -6,9 +6,9 @@
 
 ## Next Recommended Implementation Unit
 
-**Database models** — Define SQLAlchemy declarative models for `users`, `sellers`, and other entities per `DATABASE.md`.
+**Alembic initial migration** — Generate and apply the first database migration for `users`, `sellers`, `stores`, `categories`, and `products` tables using `alembic revision --autogenerate`.
 
-This unit must be completed before Alembic migrations can generate schema changes.
+This unit must be completed before any module that requires database tables (auth, seller, product, order, etc.).
 
 ## Dependencies
 
@@ -20,35 +20,30 @@ This unit must be completed before Alembic migrations can generate schema change
 | SQLAlchemy session factory (`SessionLocal`) | Complete (`back/src/core/database.py`, commit `3ea0199`) |
 | SQLAlchemy session dependency (`get_db()`) | Complete (`back/src/core/database.py`, commit `667a965`) |
 | Alembic migration environment | Complete (`back/alembic.ini`, commit `5d17e69`; `back/alembic/env.py`, commit `23d10dc`) |
-| Database unit tests | Complete (`back/tests/test_database_unit.py`, commit `290fb9b`) |
-| Database integration tests | Complete (`back/tests/test_database_integration.py`, commit `a768678`) |
+| Database models (users, sellers, stores, categories, products) | Complete (`back/src/core/models/`, commits `0f058ac`, `98436eb`, `50e5169`, `ff424f2`) |
+| Model unit tests | Complete (`back/tests/test_models_unit.py`, commit `935200d`) |
 | Psycopg 3 driver dependency | Complete (`back/pyproject.toml`, commit `d055846`) |
 | Local PostgreSQL instance | Not yet provisioned |
 
 ## Prerequisites (must be in place before implementation)
 
-- SQLAlchemy `Base` declarative class available (`back/src/core/database.py`)
-- Database engine and session factory configured
-- Entity definitions from `DATABASE.md` reviewed
-- Local PostgreSQL instance (for integration tests)
+- Local PostgreSQL installed and running
+- Development database created (`plataforma_comercio_dev`)
+- `DATABASE_URL` configured in `back/.env`
+- RLS policies designed (per `SECURITY.md` row-level security requirement)
 
 ## Completion Criteria
 
-- [ ] `back/src/core/models/` directory with model modules
-- [ ] User model (users table)
-- [ ] Seller model (sellers table)
-- [ ] Store model (stores table)
-- [ ] All models inherit from `Base`
-- [ ] Models use correct column types and constraints per `DATABASE.md`
-- [ ] Unit tests for model definitions
-- [ ] `alembic revision --autogenerate` works (after models exist)
+- [ ] `alembic revision --autogenerate -m "initial migration"` creates migration file
+- [ ] Migration file contains `users`, `sellers`, `stores`, `categories`, `products` tables
+- [ ] `alembic upgrade head` applies migration successfully against PostgreSQL
+- [ ] `alembic current` shows the applied migration
 
 ## Authorization Required
 
 **The user must explicitly approve this implementation task before work begins.** No code will be written until authorization is given.
 
-## Subsequent Units (after database models)
+## Subsequent Units (after Alembic migration)
 
-1. **Alembic initial migration**: Create `users` and `sellers` tables via `alembic revision --autogenerate`
-2. **Authentication module** (auth-module): User registration, login, JWT, Argon2
-3. **Basic tests**: Authentication and database connection tests
+1. **Authentication module** (auth-module): User registration, login, JWT, Argon2, login/register endpoints
+2. **Basic tests**: Authentication and database connection tests
