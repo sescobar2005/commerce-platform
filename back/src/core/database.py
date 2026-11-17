@@ -1,7 +1,7 @@
-"""SQLAlchemy 2.0 database engine configuration."""
+"""SQLAlchemy 2.0 database engine and session configuration."""
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from .config import settings
 
@@ -40,3 +40,9 @@ def create_db_engine(database_url: str | None = None):
 
 
 engine = create_db_engine()
+
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine,
+)
