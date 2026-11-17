@@ -7,6 +7,7 @@ Never logs private keys or complete tokens.
 """
 
 import time
+import uuid
 from pathlib import Path
 from typing import Any, Dict
 
@@ -109,6 +110,7 @@ class JWTService:
             "iat": now,
             "exp": expire,
             "type": TokenType.REFRESH,
+            "jti": str(uuid.uuid4()),
         }
         return jwt.encode(payload, self._private_key, algorithm=settings.JWT_ALGORITHM)
 
