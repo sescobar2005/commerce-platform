@@ -82,5 +82,12 @@ class Seller(Base):
         foreign_keys=[seller_id],
     )
 
+    # Relationship to Stores (1:many)
+    stores: Mapped[list["Store"]] = relationship(
+        "Store",
+        back_populates="seller",
+        foreign_keys="Store.seller_id",
+    )
+
     def __repr__(self) -> str:
         return f"<Seller(seller_id={self.seller_id}, store_name={self.store_name})>"
