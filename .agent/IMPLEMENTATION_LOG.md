@@ -153,6 +153,31 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Field | Value |
 |-------|-------|
 | Date | 2026-11-17 |
+| Phase | Phase 1 (Fundamentals) — JWT token service |
+| Completed unit | JWT token service with RS256 RSA key pair + unit tests |
+| Files affected | `back/src/core/security/jwt.py`, `back/src/core/security/__init__.py`, `back/src/core/config.py`, `back/.env.example`, `back/.gitignore`, `back/tests/test_jwt_unit.py` |
+| Tests or checks | 17/17 unit tests pass; Python syntax verified via `py_compile`; RS256 algorithm verified; token type separation verified; signature verification verified; expiration verified; malformed token handling verified |
+| Commit hashes | `d838d75` (config.py JWT settings), `a04a094` (.gitignore PEM patterns), `c97d71d` (JWT service), `a104fff` (unit tests) |
+| Observations | Implemented JWTService class with create_access_token(), create_refresh_token(), verify_access_token(), verify_refresh_token(), verify_token() methods. RS256 asymmetric encryption using RSA private key for signing, public key for verification. Keys loaded from PEM files via JWT_PRIVATE_KEY_PATH and JWT_PUBLIC_KEY_PATH environment variables. JWT_ALGORITHM=RS256 enforced exclusively. Token payload includes sub (user_id), username, role, iat, exp, type claims. Access token expiry: 15 minutes; Refresh token expiry: 7 days. Token type separation: access tokens rejected as refresh tokens and vice versa. Malformed, expired, incorrectly signed tokens safely rejected. No plaintext secrets in logs or code. JWT_SECRET_KEY removed from settings and .env.example. .gitignore updated with *.pem, *.key, *.pub, *.asc patterns. Created 17 unit tests covering token generation, validation, expiration, signature verification, type separation, malformed tokens, invalid signatures, configuration errors. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-17 |
+| Phase | Phase 1 (Fundamentals) — Refresh token revocation foundation |
+| Completed unit | JWT refresh token jti claim, RevokedRefreshToken model, Alembic migration, token revocation service + unit tests |
+| Files affected | `back/src/core/security/jwt.py`, `back/src/core/security/token_revocation.py`, `back/src/core/security/__init__.py`, `back/src/core/config.py`, `back/src/core/models/revoked_refresh_token.py`, `back/src/core/models/__init__.py`, `back/alembic/env.py`, `back/alembic/versions/b67c867d7c26_add_revoked_refresh_tokens_table.py`, `back/tests/test_token_revocation_unit.py` |
+| Tests or checks | 11/11 unit tests pass; 122/122 total security/auth tests pass (28 pre-existing failures unrelated to this work); Python syntax verified via `py_compile` |
+| Commit hashes | `05d9c58` (jti claim), `8303919` (RevokedRefreshToken model), `97f7c56` (Alembic migration), `133c659` (revocation service + tests) |
+| Observations | Implemented JWT refresh token jti claim (UUID4). Implemented RevokedRefreshToken model (jti PK, user_id FK?users CASCADE, revoked_at, expires_at). Alembic migration b67c867d7c26 creates revoked_refresh_tokens table with proper indexes. Implemented TokenRevocationService with revoke_refresh_token() and is_token_revoked() methods. Idempotent revocation (revoking already-revoked token is no-op). Concurrent request safety (IntegrityError handling). 11 unit tests covering: revocation, idempotency, lookup, invalid signature, expired token, access token rejection, missing jti, missing user_id, missing expiration, database error rollback. JWT_SECRET_KEY removed from settings and .env.example. .gitignore updated with *.pem, *.key, *.pub, *.asc patterns. |
+
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-17 |
 | Phase | Phase 1 (Fundamentals) â€” Authentication endpoints |
 | Completed unit | Authentication Pydantic schemas + unit tests |
 | Files affected | `back/src/core/security/schemas.py`, `back/tests/test_auth_schemas_unit.py` |
