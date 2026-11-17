@@ -12,7 +12,7 @@ project's security configuration defined in SECURITY.md:
 """
 
 from argon2 import PasswordHasher
-from argon2.exceptions import VerifyError, InvalidHashError
+from argon2.exceptions import InvalidHashError, VerifyMismatchError
 
 
 class PasswordService:
@@ -76,5 +76,5 @@ class PasswordService:
             raise ValueError("Password hash must not be empty")
         try:
             return self._hasher.verify(password_hash, password)
-        except (VerifyError, InvalidHashError):
+        except (VerifyMismatchError, InvalidHashError):
             return False
