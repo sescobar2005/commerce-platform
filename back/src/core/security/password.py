@@ -11,7 +11,7 @@ project's security configuration defined in SECURITY.md:
 - Salt: Random 16 bytes per hash
 """
 
-from argon2 import PasswordHasher
+from argon2 import PasswordHasher, Type
 from argon2.exceptions import InvalidHashError, VerifyMismatchError
 
 
@@ -30,7 +30,7 @@ class PasswordService:
             parallelism=4,
             hash_len=32,
             salt_len=16,
-            type=2,  # argon2id
+            type=Type.ID,  # argon2id
         )
 
     def hash_password(self, password: str) -> str:
