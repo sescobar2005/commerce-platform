@@ -99,3 +99,16 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Tests or checks | Python syntax verified via `py_compile` for all files; import/runtime tests not possible (dependencies not installed) |
 | Commit hashes | `f661ed7` (User model fields), `0d8bed0` (unit tests), `dbe34ca` (DATABASE.md) |
 | Observations | Added is_admin and is_moderator boolean fields to User model per SECURITY.md role schema. Both fields use Python default=False and database server_default=sql.false() for consistency. Also updated is_seller and is_verified to use server_default for consistency. Added 3 unit tests (default values, explicit True values, updated creation test). Updated DATABASE.md users attributes to include is_admin and is_moderator. No additional roles or authorization logic introduced. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-17 |
+| Phase | Phase 1 (Fundamentals) — Alembic initial migration |
+| Completed unit | Generated initial Alembic migration for all 5 core tables |
+| Files affected | `back/alembic.ini`, `back/alembic/env.py`, `back/alembic/script.py.mako`, `back/alembic/versions/31b998880986_initial_migration.py`, `back/src/core/config.py`, `back/src/core/models/__init__.py` |
+| Tests or checks | Migration generated and reviewed; all 5 tables verified (categories, users, sellers, stores, products); User model includes is_admin/is_moderator; all foreign keys and indexes correct; migration NOT applied to PostgreSQL |
+| Commit hashes | `a9f1350` (initial migration + infrastructure fixes) |
+| Observations | Fixed alembic.ini %%(DATABASE_URL)s interpolation, env.py sys.path + model imports, config.py Settings fields, models/__init__.py model exports. Migration generated successfully with autogenerate. Migration file NOT applied to database (pending user authorization). |
+

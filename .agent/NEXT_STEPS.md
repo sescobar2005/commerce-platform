@@ -6,9 +6,9 @@
 
 ## Next Recommended Implementation Unit
 
-**Alembic initial migration** — Generate and apply the first database migration for `users`, `sellers`, `stores`, `categories`, and `products` tables using `alembic revision --autogenerate`.
+**Authentication module** (auth-module): User registration, login, JWT token management, Argon2 password hashing, login/register endpoints.
 
-This unit must be completed before any module that requires database tables (auth, seller, product, order, etc.).
+This unit builds on the completed database foundation (engine, sessions, models, migration).
 
 ## Dependencies
 
@@ -16,34 +16,36 @@ This unit must be completed before any module that requires database tables (aut
 |------------|--------|
 | Backend directory structure (`back/src/`, `back/tests/`, `back/alembic/`) | Complete |
 | Configuration files (`.env.example`, `.gitignore`, `pyproject.toml`, `README.md`) | Complete |
-| SQLAlchemy 2.0 database engine configuration | Complete (`back/src/core/database.py`) |
-| SQLAlchemy session factory (`SessionLocal`) | Complete (`back/src/core/database.py`, commit `3ea0199`) |
-| SQLAlchemy session dependency (`get_db()`) | Complete (`back/src/core/database.py`, commit `667a965`) |
-| Alembic migration environment | Complete (`back/alembic.ini`, commit `5d17e69`; `back/alembic/env.py`, commit `23d10dc`) |
-| Database models (users, sellers, stores, categories, products) | Complete (`back/src/core/models/`, commits `0f058ac`, `98436eb`, `50e5169`, `ff424f2`) |
-| Model unit tests | Complete (`back/tests/test_models_unit.py`, commit `935200d`) |
-| Psycopg 3 driver dependency | Complete (`back/pyproject.toml`, commit `d055846`) |
-| Local PostgreSQL instance | Not yet provisioned |
+| SQLAlchemy 2.0 database engine + session factory + `get_db()` dependency | Complete |
+| Alembic migration environment + initial migration | Complete (`back/alembic/versions/31b998880986_initial_migration.py`) |
+| Database models (users, sellers, stores, categories, products) | Complete |
+| Psycopg 3 driver dependency | Complete |
+| Local PostgreSQL instance | Provisioned |
+| Development database (`plataforma_comercio_dev`) | Created |
+| `DATABASE_URL` configured in `back/.env` | Configured |
 
 ## Prerequisites (must be in place before implementation)
 
-- Local PostgreSQL installed and running
-- Development database created (`plataforma_comercio_dev`)
-- `DATABASE_URL` configured in `back/.env`
-- RLS policies designed (per `SECURITY.md` row-level security requirement)
+- All database infrastructure complete and verified
+- JWT secret key configured in `.env`
+- Argon2 password hashing library available
 
 ## Completion Criteria
 
-- [ ] `alembic revision --autogenerate -m "initial migration"` creates migration file
-- [ ] Migration file contains `users`, `sellers`, `stores`, `categories`, `products` tables
-- [ ] `alembic upgrade head` applies migration successfully against PostgreSQL
-- [ ] `alembic current` shows the applied migration
+- [ ] User registration endpoint (`POST /api/v1/auth/register`)
+- [ ] User login endpoint (`POST /api/v1/auth/login`)
+- [ ] JWT token generation and validation
+- [ ] Argon2 password hashing
+- [ ] Password reset flow
+- [ ] Authentication unit and integration tests
 
 ## Authorization Required
 
 **The user must explicitly approve this implementation task before work begins.** No code will be written until authorization is given.
 
-## Subsequent Units (after Alembic migration)
+## Subsequent Units
 
-1. **Authentication module** (auth-module): User registration, login, JWT, Argon2, login/register endpoints
-2. **Basic tests**: Authentication and database connection tests
+1. **Seller module** (seller-module): Seller registration, store management
+2. **Product module** (product-module): Product catalog, inventory
+3. **Cart module** (cart-module): Shopping cart functionality
+4. **Order module** (order-module): Orders, sub-orders, payments
