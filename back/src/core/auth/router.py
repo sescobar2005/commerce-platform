@@ -61,7 +61,7 @@ def register(
             detail="Email already registered",
         )
 
-    # Hash the password
+# Hash the password
     password_hash = password_service.hash_password(request.password)
 
     # Create the user ORM instance
@@ -69,6 +69,8 @@ def register(
         username=request.username,
         email=request.email,
         password_hash=password_hash,
+        is_seller=False,
+        is_verified=False,
     )
 
     # Persist to database
