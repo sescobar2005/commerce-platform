@@ -51,3 +51,15 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Tests or checks | Python syntax verified via `py_compile` for all files; import/runtime tests not possible (dependencies not installed) |
 | Commit hashes | `d055846` (psycopg3 driver), `e6e1fdb` (connection pooling), `290fb9b` (unit tests), `a768678` (integration tests) |
 | Observations | Replaced psycopg2-binary with psycopg3 driver. Added connection pooling (pool_size=5, max_overflow=10, pool_timeout=30, pool_recycle=1800, pool_pre_ping=True). Created 7 unit tests (no live DB needed) and 4 integration tests (require PostgreSQL, skipped when DATABASE_URL not set). Real DB connection not verified (PostgreSQL not provisioned). |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-16 |
+| Phase | Phase 1 (Fundamentals) — Database session management |
+| Completed unit | SQLAlchemy 2.0 session factory, session lifecycle, FastAPI dependency, unit tests, integration tests |
+| Files affected | `back/src/core/database.py`, `back/tests/test_session_unit.py`, `back/tests/test_database_integration.py` |
+| Tests or checks | Python syntax verified via `py_compile` for all files; import/runtime tests not possible (dependencies not installed) |
+| Commit hashes | `3ea0199` (session factory), `667a965` (get_db dependency), `56f6df1` (session unit tests), `6bae29e` (session integration tests) |
+| Observations | Implemented SessionLocal sessionmaker (autocommit=False, autoflush=False, bound to engine). Implemented get_db() FastAPI dependency generator that yields session and ensures cleanup via finally: db.close(). Created 9 unit tests (no live DB needed) covering factory config, session creation, lifecycle, cleanup, rollback, commit, dependency behavior. Created 4 integration tests (require PostgreSQL, skipped when DATABASE_URL not set) covering session connect/query, close, rollback, get_db dependency. Real DB connection not verified (PostgreSQL not provisioned). |
