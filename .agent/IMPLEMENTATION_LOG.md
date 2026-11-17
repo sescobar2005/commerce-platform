@@ -153,6 +153,18 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Field | Value |
 |-------|-------|
 | Date | 2026-11-17 |
+| Phase | Phase 1 (Fundamentals) — Authentication endpoints |
+| Completed unit | User registration endpoint (POST /api/v1/auth/register) + unit tests |
+| Files affected | `back/src/core/auth/router.py`, `back/src/core/auth/__init__.py`, `back/tests/test_auth_router_unit.py` |
+| Tests or checks | 5/5 unit tests pass; 63/63 total security/auth tests pass; Python syntax verified via `py_compile` |
+| Commit hashes | `3957e42` (registration endpoint), `bb0f58c` (unit tests) |
+| Observations | Implemented POST /api/v1/auth/register endpoint. Accepts UserRegisterRequest (username, email, password). Checks username and email uniqueness (409 CONFLICT if duplicate). Hashes password with PasswordService (Argon2id). Creates User ORM instance with is_seller=False, is_verified=False. Persists via SQLAlchemy session with commit. Returns UserRegisterResponse (no password_hash). Handles IntegrityError with rollback and 409 CONFLICT. 5 unit tests covering successful registration, duplicate username, duplicate email, integrity error rollback, password hashing. No JWT generation during registration (per task scope). |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-17 |
 | Phase | Phase 1 (Fundamentals) — Authentication Pydantic schemas |
 | Completed unit | Authentication Pydantic schemas + unit tests |
 | Files affected | `back/src/core/security/schemas.py`, `back/tests/test_auth_schemas_unit.py` |
