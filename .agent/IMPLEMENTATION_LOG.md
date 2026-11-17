@@ -63,3 +63,15 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Tests or checks | Python syntax verified via `py_compile` for all files; import/runtime tests not possible (dependencies not installed) |
 | Commit hashes | `3ea0199` (session factory), `667a965` (get_db dependency), `56f6df1` (session unit tests), `6bae29e` (session integration tests) |
 | Observations | Implemented SessionLocal sessionmaker (autocommit=False, autoflush=False, bound to engine). Implemented get_db() FastAPI dependency generator that yields session and ensures cleanup via finally: db.close(). Created 9 unit tests (no live DB needed) covering factory config, session creation, lifecycle, cleanup, rollback, commit, dependency behavior. Created 4 integration tests (require PostgreSQL, skipped when DATABASE_URL not set) covering session connect/query, close, rollback, get_db dependency. Real DB connection not verified (PostgreSQL not provisioned). |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-16 |
+| Phase | Phase 1 (Fundamentals) — Alembic migration infrastructure |
+| Completed unit | Alembic migration environment configuration with SQLAlchemy metadata integration and unit tests |
+| Files affected | `back/alembic.ini`, `back/alembic/env.py`, `back/tests/test_alembic_unit.py` |
+| Tests or checks | Python syntax verified via `py_compile` for all files; import/runtime tests not possible (dependencies not installed) |
+| Commit hashes | `5d17e69` (alembic.ini), `23d10dc` (env.py), `a1a6b38` (unit tests) |
+| Observations | Implemented alembic.ini with script_location=back/alembic and sqlalchemy.url=%(DATABASE_URL)s. Implemented env.py using Base.metadata as target_metadata, reads DATABASE_URL from pydantic-settings settings, supports offline and online modes. Created 7 unit tests covering config loading, SQLALCHEMY URL, script location, metadata integration, settings configuration. No migration scripts created (per task scope - no business models yet). Real DB connection not verified (PostgreSQL not provisioned). |

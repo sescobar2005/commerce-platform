@@ -6,9 +6,9 @@
 
 ## Next Recommended Implementation Unit
 
-**Alembic migration configuration** — Configure Alembic migration environment (`alembic.ini`, `back/alembic/env.py`) for database schema versioning.
+**Database models** — Define SQLAlchemy declarative models for `users`, `sellers`, and other entities per `DATABASE.md`.
 
-This unit must be completed before any module that requires database tables (auth, seller, product, order, etc.).
+This unit must be completed before Alembic migrations can generate schema changes.
 
 ## Dependencies
 
@@ -16,9 +16,10 @@ This unit must be completed before any module that requires database tables (aut
 |------------|--------|
 | Backend directory structure (`back/src/`, `back/tests/`, `back/alembic/`) | Complete |
 | Configuration files (`.env.example`, `.gitignore`, `pyproject.toml`, `README.md`) | Complete |
-| SQLAlchemy 2.0 database engine configuration | Complete (`back/src/core/database.py`, commit `e6e1fdb`) |
+| SQLAlchemy 2.0 database engine configuration | Complete (`back/src/core/database.py`) |
 | SQLAlchemy session factory (`SessionLocal`) | Complete (`back/src/core/database.py`, commit `3ea0199`) |
 | SQLAlchemy session dependency (`get_db()`) | Complete (`back/src/core/database.py`, commit `667a965`) |
+| Alembic migration environment | Complete (`back/alembic.ini`, commit `5d17e69`; `back/alembic/env.py`, commit `23d10dc`) |
 | Database unit tests | Complete (`back/tests/test_database_unit.py`, commit `290fb9b`) |
 | Database integration tests | Complete (`back/tests/test_database_integration.py`, commit `a768678`) |
 | Psycopg 3 driver dependency | Complete (`back/pyproject.toml`, commit `d055846`) |
@@ -26,27 +27,28 @@ This unit must be completed before any module that requires database tables (aut
 
 ## Prerequisites (must be in place before implementation)
 
-- Local PostgreSQL installed and running
-- Development database created (`plataforma_comercio_dev`)
-- `DATABASE_URL` configured in `back/.env`
-- Alembic environment configured (`alembic.ini`, `back/alembic/env.py`)
-- RLS policies designed (per `SECURITY.md` row-level security requirement)
+- SQLAlchemy `Base` declarative class available (`back/src/core/database.py`)
+- Database engine and session factory configured
+- Entity definitions from `DATABASE.md` reviewed
+- Local PostgreSQL instance (for integration tests)
 
 ## Completion Criteria
 
-- [ ] `alembic.ini` present and functional
-- [ ] `back/alembic/env.py` configured for migrations with SQLAlchemy target metadata
-- [ ] `alembic current` runs without errors
+- [ ] `back/src/core/models/` directory with model modules
+- [ ] User model (users table)
+- [ ] Seller model (sellers table)
+- [ ] Store model (stores table)
+- [ ] All models inherit from `Base`
+- [ ] Models use correct column types and constraints per `DATABASE.md`
+- [ ] Unit tests for model definitions
 - [ ] `alembic revision --autogenerate` works (after models exist)
-- [ ] RLS policies documented and ready to implement per entity
 
 ## Authorization Required
 
 **The user must explicitly approve this implementation task before work begins.** No code will be written until authorization is given.
 
-## Subsequent Units (after Alembic)
+## Subsequent Units (after database models)
 
-1. **Database models** (SQLAlchemy declarative models for `users`, `sellers`, etc.)
-2. **Alembic initial migration**: Create `users` and `sellers` tables
-3. **Authentication module** (auth-module): User model, JWT, Argon2, login/register endpoints
-4. **Basic tests**: Authentication and database connection tests
+1. **Alembic initial migration**: Create `users` and `sellers` tables via `alembic revision --autogenerate`
+2. **Authentication module** (auth-module): User registration, login, JWT, Argon2
+3. **Basic tests**: Authentication and database connection tests
