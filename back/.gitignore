@@ -48,6 +48,12 @@ venv.bak/
 .env.local
 .env.production
 
+# RSA key files (private/public keys for JWT signing)
+*.pem
+*.key
+*.pub
+*.asc
+
 # Alembic
 alembic/versions/
 
