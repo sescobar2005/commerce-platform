@@ -18,7 +18,7 @@ from alembic import context
 
 from src.core.config import settings
 from src.core.database import Base
-from src.core.models import Category, Product, Seller, Store, User  # noqa: F401
+from src.core.models import Category, Product, RevokedRefreshToken, Seller, Store, User  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
