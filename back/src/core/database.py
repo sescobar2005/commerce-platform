@@ -1,7 +1,10 @@
 """SQLAlchemy 2.0 database engine and session configuration."""
 
+from typing import Generator
+
+from fastapi import Depends
 from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from .config import settings
 
@@ -46,3 +49,24 @@ SessionLocal = sessionmaker(
     autoflush=False,
     bind=engine,
 )
+
+
+def get_db() -> Generator[Session, None, None]:
+    """FastAPI dependency that provides a database session per request.
+
+    Yields:
+        A SQLAlchemy Session instance bound to the application engine.
+
+    The session is automatically closed when the generator is exhausted,
+    even if an exception occurs during the request. Callers should use
+    this as a FastAPI dependency:
+
+        @app.get("/items/")
+        def read_items(db: Session = Depends(get_db)):
+            ...
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
