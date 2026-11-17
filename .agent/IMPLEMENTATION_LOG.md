@@ -87,3 +87,15 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Tests or checks | Python syntax verified via `py_compile` for all files; import/runtime tests not possible (dependencies not installed) |
 | Commit hashes | `0f058ac` (User + Seller models), `98436eb` (Store model), `50e5169` (Category model), `ff424f2` (Product model + updated Store/Category), `935200d` (model unit tests) |
 | Observations | Implemented User model (user_id PK, username, email, password_hash, is_seller, is_verified, created_at, last_login_at, preferences_json; 1:1 with Seller). Implemented Seller model (seller_id PK FK→users, store_name, business_name, tax_id, payment_info_json, bank_account, is_verified, created_at, last_login_at; 1:1 with User, 1:many with Store). Implemented Store model (store_id PK, seller_id FK, name, description, slug, logo_url, cover_image_url, is_active, created_at, updated_at; many:1 with Seller, 1:many with Product). Implemented Category model (category_id PK, name, description, slug, parent_id self-FK, level, path, is_active, created_at; self-referential hierarchy, 1:many with Product). Implemented Product model (product_id PK, store_id FK, category_id FK, name, description, price, cost, sku, stock, is_active, images_urls, created_at, updated_at; many:1 with Store and Category). All models use SQLAlchemy 2.0 Mapped/mapped_column conventions, inherit from Base. Created 16 unit tests covering model creation, defaults, repr, metadata registration, in-memory table creation. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-16 |
+| Phase | Phase 1 (Fundamentals) — User model role fields |
+| Completed unit | Added is_admin and is_moderator boolean fields to User model with database-level defaults |
+| Files affected | `back/src/core/models/user.py`, `back/tests/test_models_unit.py`, `DATABASE.md` |
+| Tests or checks | Python syntax verified via `py_compile` for all files; import/runtime tests not possible (dependencies not installed) |
+| Commit hashes | `f661ed7` (User model fields), `0d8bed0` (unit tests), `dbe34ca` (DATABASE.md) |
+| Observations | Added is_admin and is_moderator boolean fields to User model per SECURITY.md role schema. Both fields use Python default=False and database server_default=sql.false() for consistency. Also updated is_seller and is_verified to use server_default for consistency. Added 3 unit tests (default values, explicit True values, updated creation test). Updated DATABASE.md users attributes to include is_admin and is_moderator. No additional roles or authorization logic introduced. |
