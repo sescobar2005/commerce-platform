@@ -32,6 +32,30 @@ class TestUserModel:
         assert user.password_hash == "argon2id$hashed"
         assert user.is_seller is False
         assert user.is_verified is False
+        assert user.is_admin is False
+        assert user.is_moderator is False
+
+    def test_user_admin_and_moderator_defaults(self):
+        """User should default is_admin and is_moderator to False."""
+        user = User(
+            username="testuser",
+            email="test@example.com",
+            password_hash="hash",
+        )
+        assert user.is_admin is False
+        assert user.is_moderator is False
+
+    def test_user_can_be_admin_and_moderator(self):
+        """User should allow setting is_admin and is_moderator to True."""
+        user = User(
+            username="adminuser",
+            email="admin@example.com",
+            password_hash="argon2id$hashed",
+            is_admin=True,
+            is_moderator=True,
+        )
+        assert user.is_admin is True
+        assert user.is_moderator is True
 
     def test_user_defaults(self):
         """User should have correct default values."""
@@ -42,6 +66,8 @@ class TestUserModel:
         )
         assert user.is_seller is False
         assert user.is_verified is False
+        assert user.is_admin is False
+        assert user.is_moderator is False
         assert user.preferences_json is None
         assert user.last_login_at is None
 
