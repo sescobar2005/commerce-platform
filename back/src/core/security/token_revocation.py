@@ -80,8 +80,8 @@ class TokenRevocationService:
             expires_at=datetime.fromtimestamp(exp, tz=timezone.utc),
         )
 
-        self.db.add(revoked_token)
         try:
+            self.db.add(revoked_token)
             self.db.commit()
         except IntegrityError:
             self.db.rollback()
