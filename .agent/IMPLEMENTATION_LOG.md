@@ -124,3 +124,15 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Commit hashes | None (database operation only — no code changes committed) |
 | Observations | Migration applied successfully to `plataforma_comercio_dev`. Database revision is `31b998880986` (head). Database ready for authentication module implementation. |
 
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-17 |
+| Phase | Phase 1 (Fundamentals) — Password security service |
+| Completed unit | Password security service with Argon2id hashing and verification + unit tests |
+| Files affected | `back/src/core/security/__init__.py`, `back/src/core/security/password.py`, `back/tests/test_password_unit.py` |
+| Tests or checks | 22/22 unit tests pass; Python syntax verified via `py_compile`; Argon2id parameters verified (time_cost=3, memory_cost=65536, parallelism=4, hash_len=32, salt_len=16, type=Type.ID) |
+| Commit hashes | `d2fb8e7` (password service), `cf0927c` (argon2 exception imports fix), `102bb89` (salt_len parameter fix), `42e77fe` (Type.ID enum fix), `b82c59c` (unit tests) |
+| Observations | Implemented PasswordService class with hash_password() and verify_password() methods. Argon2id configuration per SECURITY.md: time_cost=3, memory_cost=65536 (64MB), parallelism=4, hash_len=32, salt_len=16, type=Type.ID. All boolean fields use consistent Python/database defaults. Created 22 unit tests covering hash creation, verification (correct/incorrect), input validation, configuration parameters, salt randomness. No plaintext password storage, no salt reuse, safe error handling for invalid/malformed hashes. No JWT, no authentication endpoints, no ORM model modifications, no migrations. |
+
