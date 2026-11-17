@@ -4,7 +4,7 @@
 
 | Entity | ID (PK) | Key attributes | Responsibilities |
 |--------|---------|----------------|------------------|
-| **users** | user_id | username, email, password_hash, is_seller, is_verified, created_at, last_login_at, preferences_json | Base authentication, shared profile data for buyers and sellers |
+| **users** | user_id | username, email, password_hash, is_seller, is_verified, is_admin, is_moderator, created_at, last_login_at, preferences_json | Base authentication, shared profile data for buyers and sellers |
 | **sellers** | seller_id (FK → users) | store_name, business_name, tax_id, payment_info_json, bank_account, is_verified, created_at | Seller registration, business configuration, accounting isolation |
 | **stores** | store_id | seller_id (FK), name, description, slug, logo_url, cover_image_url, is_active, created_at, updated_at | Store administration, storefront page, images |
 | **categories** | category_id | name, description, slug, parent_id (FK → categories), level, path, is_active, created_at | Product catalog organization, category hierarchy |
