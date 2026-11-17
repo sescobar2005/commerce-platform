@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import Boolean, DateTime, String, func
+from sqlalchemy import Boolean, DateTime, String, func, sql
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.database import Base
@@ -52,13 +52,29 @@ class User(Base):
         Boolean,
         default=False,
         nullable=False,
+        server_default=sql.false(),
         comment="Whether the user can operate as a seller",
     )
     is_verified: Mapped[bool] = mapped_column(
         Boolean,
         default=False,
         nullable=False,
+        server_default=sql.false(),
         comment="Whether the user's email is verified",
+    )
+    is_admin: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+        server_default=sql.false(),
+        comment="Whether the user is an administrator",
+    )
+    is_moderator: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+        server_default=sql.false(),
+        comment="Whether the user is a content moderator",
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
