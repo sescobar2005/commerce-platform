@@ -94,5 +94,12 @@ class Category(Base):
         foreign_keys="Category.parent_id",
     )
 
+    # Relationship to Products (1:many)
+    products: Mapped[List["Product"]] = relationship(
+        "Product",
+        back_populates="category",
+        foreign_keys="Product.category_id",
+    )
+
     def __repr__(self) -> str:
         return f"<Category(category_id={self.category_id}, name={self.name}, slug={self.slug})>"

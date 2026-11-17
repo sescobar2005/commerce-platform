@@ -6,7 +6,7 @@ and contains products.
 
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -89,6 +89,13 @@ class Store(Base):
         "Seller",
         back_populates="stores",
         foreign_keys=[seller_id],
+    )
+
+    # Relationship to Products (1:many)
+    products: Mapped[List["Product"]] = relationship(
+        "Product",
+        back_populates="store",
+        foreign_keys="Product.store_id",
     )
 
     def __repr__(self) -> str:
