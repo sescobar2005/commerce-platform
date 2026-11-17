@@ -10,7 +10,7 @@ import os
 import pytest
 from sqlalchemy import text
 
-from src.core.database import create_db_engine, engine
+from src.core.database import SessionLocal, create_db_engine, engine
 
 
 def _database_url_available() -> bool:
@@ -50,6 +50,53 @@ class TestDatabaseEngineConnection:
     def test_engine_supports_health_check(self):
         """Engine should have pool_pre_ping enabled for connection health checks."""
         assert engine.pool._pre_ping is True
+
+
+@pytest.mark.skipif(
+    not _database_url_available(),
+    reason="DATABASE_URL environment variable not set",
+)
+class TestSessionLifecycleIntegration:
+    """Integration tests for session lifecycle requiring live PostgreSQL."""
+
+    def test_session_can_connect_and_query(self):
+        """SessionLocal should produce a session that can connect and query."""
+        session = SessionLocal()
+        try:
+            result = session.execute(text("SELECT 1"))
+            assert result.scalar() == 1
+        finally:
+            session.close()
+
+    def test_session_closes_properly(self):
+        """Session should be closable and marked inactive after close."""
+        session = SessionLocal()
+        session.close()
+        assert session.is_active is False
+
+    def test_session_rollback_works(self):
+        """Session rollback should work without error on live database."""
+        session = SessionLocal()
+        try:
+            session.execute(text("SELECT 1"))
+            session.rollback()
+        finally:
+            session.close()
+
+    def test_get_db_dependency_yields_usable_session(self):
+        """get_db dependency should yield a session that can query live database."""
+        from src.core.database import get_db
+
+        generator = get_db()
+        try:
+            session = next(generator)
+            result = session.execute(text("SELECT 1"))
+            assert result.scalar() == 1
+        finally:
+            try:
+                generator.close()
+            except StopIteration:
+                pass
 
 
 @pytest.mark.skipif(
