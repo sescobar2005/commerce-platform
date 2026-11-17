@@ -148,3 +148,16 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Commit hashes | `d838d75` (config.py JWT settings), `a04a094` (.gitignore PEM patterns), `c97d71d` (JWT service), `a104fff` (unit tests) |
 | Observations | Implemented JWTService class with create_access_token(), create_refresh_token(), verify_access_token(), verify_refresh_token(), verify_token() methods. RS256 asymmetric encryption using RSA private key for signing, public key for verification. Keys loaded from PEM files via JWT_PRIVATE_KEY_PATH and JWT_PUBLIC_KEY_PATH environment variables. JWT_ALGORITHM=RS256 enforced exclusively. Token payload includes sub (user_id), username, role, iat, exp, type claims. Access token expiry: 15 minutes; Refresh token expiry: 7 days. Token type separation: access tokens rejected as refresh tokens and vice versa. Malformed, expired, incorrectly signed tokens safely rejected. No plaintext secrets in logs or code. JWT_SECRET_KEY removed from settings and .env.example. .gitignore updated with *.pem, *.key, *.pub, *.asc patterns. Created 17 unit tests covering token generation, validation, expiration, signature verification, type separation, malformed tokens, invalid signatures, configuration errors. |
 
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-17 |
+| Phase | Phase 1 (Fundamentals) — Authentication Pydantic schemas |
+| Completed unit | Authentication Pydantic schemas + unit tests |
+| Files affected | `back/src/core/security/schemas.py`, `back/tests/test_auth_schemas_unit.py` |
+| Tests or checks | 19/19 unit tests pass; 58/58 total security/auth tests pass (22 password + 17 JWT + 19 schemas); Python syntax verified via `py_compile` |
+| Commit hashes | `325c783` (schemas), `25f28da` (unit tests) |
+| Observations | Implemented UserRegisterRequest (username, email, password), UserRegisterResponse (user_id, username, email, is_seller, is_verified, created_at), UserLoginRequest (username, password), TokenResponse (access_token, refresh_token, token_type), UserLoginResponse (access_token, refresh_token, token_type, user), UserResponse (user_id, username, email, is_seller, is_verified, created_at). UserResponse excludes password_hash. All schemas use Pydantic validation with EmailStr for email, max_length constraints matching DB schema. No JWT generation, no password hashing, no database operations, no endpoints. |
+
+
