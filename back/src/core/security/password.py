@@ -29,7 +29,7 @@ class PasswordService:
             memory_cost=65536,
             parallelism=4,
             hash_len=32,
-            salt_length=16,
+            salt_len=16,
             type=2,  # argon2id
         )
 
