@@ -8,7 +8,7 @@
 
 **Authentication module** (auth-module): User registration, login, JWT token management, Argon2 password hashing, login/register endpoints.
 
-This unit builds on the completed database foundation (engine, sessions, models, migration).
+This unit builds on the completed database foundation (engine, sessions, models, migration applied to `plataforma_comercio_dev`).
 
 ## Dependencies
 
@@ -17,11 +17,11 @@ This unit builds on the completed database foundation (engine, sessions, models,
 | Backend directory structure (`back/src/`, `back/tests/`, `back/alembic/`) | Complete |
 | Configuration files (`.env.example`, `.gitignore`, `pyproject.toml`, `README.md`) | Complete |
 | SQLAlchemy 2.0 database engine + session factory + `get_db()` dependency | Complete |
-| Alembic migration environment + initial migration | Complete (`back/alembic/versions/31b998880986_initial_migration.py`) |
+| Alembic migration environment + initial migration applied | Complete (revision `31b998880986` on `plataforma_comercio_dev`) |
 | Database models (users, sellers, stores, categories, products) | Complete |
 | Psycopg 3 driver dependency | Complete |
 | Local PostgreSQL instance | Provisioned |
-| Development database (`plataforma_comercio_dev`) | Created |
+| Development database (`plataforma_comercio_dev`) | Created and migrated |
 | `DATABASE_URL` configured in `back/.env` | Configured |
 
 ## Prerequisites (must be in place before implementation)

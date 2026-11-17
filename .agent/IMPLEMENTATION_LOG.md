@@ -112,3 +112,15 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Commit hashes | `a9f1350` (initial migration + infrastructure fixes) |
 | Observations | Fixed alembic.ini %%(DATABASE_URL)s interpolation, env.py sys.path + model imports, config.py Settings fields, models/__init__.py model exports. Migration generated successfully with autogenerate. Migration file NOT applied to database (pending user authorization). |
 
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-17 |
+| Phase | Phase 1 (Fundamentals) — Apply initial Alembic migration |
+| Completed unit | Applied migration `31b998880986` to `plataforma_comercio_dev` |
+| Files affected | `back/alembic/versions/31b998880986_initial_migration.py` (already committed in `a9f1350`) |
+| Tests or checks | Migration applied via `alembic upgrade head`; `alembic current` shows `31b998880986`; all 5 tables verified (categories, users, sellers, stores, products); all foreign keys with ON DELETE CASCADE verified; all indexes verified; User boolean fields (is_seller, is_verified, is_admin, is_moderator) default=false, NOT NULL verified |
+| Commit hashes | None (database operation only — no code changes committed) |
+| Observations | Migration applied successfully to `plataforma_comercio_dev`. Database revision is `31b998880986` (head). Database ready for authentication module implementation. |
+
