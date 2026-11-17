@@ -14,7 +14,9 @@ class Settings(BaseSettings):
     TEST_DATABASE_URL: str = ""
 
     SECRET_KEY: str
-    JWT_SECRET_KEY: str
+    JWT_ALGORITHM: str
+    JWT_PRIVATE_KEY_PATH: str
+    JWT_PUBLIC_KEY_PATH: str
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     REFRESH_TOKEN_EXPIRE_DAYS: int
