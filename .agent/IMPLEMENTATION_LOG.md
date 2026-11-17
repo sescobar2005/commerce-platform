@@ -39,3 +39,15 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Tests or checks | Python syntax verified via `py_compile`; import test not possible (dependencies not installed) |
 | Commit hash | `80b9f59` |
 | Observations | Implemented `create_db_engine()` factory, `Base` declarative class, module-level `engine`. Uses `pydantic-settings` for env-based `DATABASE_URL`. No sessions, models, or Alembic (per task scope). Real DB connection not verified (PostgreSQL not provisioned). |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-16 |
+| Phase | Phase 1 (Fundamentals) — Database engine configuration |
+| Completed unit | SQLAlchemy 2.0 database engine with connection pooling, Psycopg 3 driver, unit tests, integration tests |
+| Files affected | `back/pyproject.toml`, `back/src/core/database.py`, `back/tests/__init__.py`, `back/tests/test_database_unit.py`, `back/tests/test_database_integration.py` |
+| Tests or checks | Python syntax verified via `py_compile` for all files; import/runtime tests not possible (dependencies not installed) |
+| Commit hashes | `d055846` (psycopg3 driver), `e6e1fdb` (connection pooling), `290fb9b` (unit tests), `a768678` (integration tests) |
+| Observations | Replaced psycopg2-binary with psycopg3 driver. Added connection pooling (pool_size=5, max_overflow=10, pool_timeout=30, pool_recycle=1800, pool_pre_ping=True). Created 7 unit tests (no live DB needed) and 4 integration tests (require PostgreSQL, skipped when DATABASE_URL not set). Real DB connection not verified (PostgreSQL not provisioned). |

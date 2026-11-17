@@ -16,7 +16,10 @@ This unit must be completed before any module that requires data persistence (au
 |------------|--------|
 | Backend directory structure (`back/src/`, `back/tests/`, `back/alembic/`) | Complete |
 | Configuration files (`.env.example`, `.gitignore`, `pyproject.toml`, `README.md`) | Complete |
-| SQLAlchemy 2.0 database engine configuration | Complete (`back/src/core/database.py`, commit `80b9f59`) |
+| SQLAlchemy 2.0 database engine configuration | Complete (`back/src/core/database.py`, commit `e6e1fdb`) |
+| Database unit tests | Complete (`back/tests/test_database_unit.py`, commit `290fb9b`) |
+| Database integration tests | Complete (`back/tests/test_database_integration.py`, commit `a768678`) |
+| Psycopg 3 driver dependency | Complete (`back/pyproject.toml`, commit `d055846`) |
 | Local PostgreSQL instance | Not yet provisioned |
 | Alembic configuration | Not yet started |
 
