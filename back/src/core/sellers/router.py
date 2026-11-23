@@ -65,6 +65,7 @@ def register_seller(
         tax_id=request.tax_id,
         payment_info_json=request.payment_info_json,
         bank_account=request.bank_account,
+        is_verified=False,
     )
 
     try:
