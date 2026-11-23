@@ -9,6 +9,7 @@ from jose import JWTError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from src.core.auth.dependencies import get_current_user
 from src.core.database import get_db
 from src.core.models.user import User
 from src.core.security.jwt import JWTService
@@ -257,3 +258,61 @@ def refresh(
         refresh_token=request.refresh_token,
         token_type="bearer",
     )
+
+
+@router.post(
+    "/logout",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Log out a user",
+    description="Revoke the refresh token associated with the current session.",
+)
+def logout(
+    request: TokenRefreshRequest,
+    current_user: UserResponse = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    jwt_service: JWTService = Depends(get_jwt_service),
+):
+    """Log out a user by revoking their refresh token.
+
+    Requires a valid access token. Revokes the refresh token provided
+    in the request body, provided it belongs to the authenticated user.
+
+    Args:
+        request: Logout request with refresh token.
+        current_user: Authenticated user from JWT access token.
+        db: Database session dependency.
+        jwt_service: JWT token service dependency.
+
+    Returns:
+        dict: Confirmation message.
+
+    Raises:
+        HTTPException: 401 if access token is missing or invalid,
+            or if refresh token is invalid/expired.
+        HTTPException: 403 if refresh token belongs to another user.
+    """
+    # Verify the refresh token
+    try:
+        payload = jwt_service.verify_refresh_token(request.refresh_token)
+    except (JWTError, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token",
+        )
+
+    jti = payload.get("jti")
+    token_user_id = payload.get("sub")
+
+    # Verify the refresh token belongs to the authenticated user
+    if token_user_id != str(current_user.user_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Refresh token does not belong to the authenticated user",
+        )
+
+    # Revoke the refresh token
+    revocation_service = TokenRevocationService(db, jwt_service)
+    revocation_service.revoke_refresh_token(request.refresh_token)
+
+    return {"message": "Successfully logged out"}
