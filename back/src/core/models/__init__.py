@@ -1,5 +1,6 @@
 """Database models package for Plataforma de Comercio."""
 
+from src.core.models.cart import Cart, CartItem  # noqa: F401
 from src.core.models.category import Category  # noqa: F401
 from src.core.models.product import Product  # noqa: F401
 from src.core.models.revoked_refresh_token import RevokedRefreshToken  # noqa: F401
