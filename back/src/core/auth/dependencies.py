@@ -13,7 +13,7 @@ from src.core.database import get_db
 from src.core.models.user import User
 from src.core.security.jwt import JWTService
 from src.core.security.password import PasswordService
-from src.core.security.schemas import UserResponse
+from src.core.security.schemas import CurrentUser, UserResponse
 from sqlalchemy.orm import Session
 
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -33,7 +33,7 @@ def get_current_user(
     credentials: HTTPAuthorizationCredentials | None,
     db: Session = Depends(get_db),
     jwt_service: JWTService = Depends(get_jwt_service),
-) -> UserResponse:
+) -> CurrentUser:
     """Validate a Bearer access token and return the authenticated user.
 
     Args:
@@ -42,7 +42,8 @@ def get_current_user(
         jwt_service: JWT token service dependency.
 
     Returns:
-        UserResponse: The authenticated user's public data.
+        CurrentUser: The authenticated user's authorization data,
+            including administrative privilege flag.
 
     Raises:
         HTTPException: 401 if credentials are missing, invalid, expired,
@@ -84,7 +85,7 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    return UserResponse(
+    return CurrentUser(
         user_id=str(user.user_id),
         username=user.username,
         email=user.email,
@@ -93,7 +94,3 @@ def get_current_user(
         is_admin=user.is_admin,
         created_at=user.created_at,
     )
-
-
-# Dependency alias for use in route definitions
-CurrentUser = Annotated[UserResponse, Depends(get_current_user)]

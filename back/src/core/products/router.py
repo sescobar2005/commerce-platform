@@ -15,7 +15,7 @@ from src.core.models.category import Category
 from src.core.models.product import Product
 from src.core.models.seller import Seller
 from src.core.models.store import Store
-from src.core.security.schemas import UserResponse
+from src.core.security.schemas import CurrentUser
 from src.core.products.schemas import (
     ProductCreateRequest,
     ProductListResponse,
@@ -36,7 +36,7 @@ router = APIRouter(prefix="/products", tags=["products"])
 def create_product(
     request: ProductCreateRequest,
     db: Session = Depends(get_db),
-    current_user: UserResponse = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ) -> ProductResponse:
     """Create a new product in the authenticated seller's store.
 
@@ -350,7 +350,7 @@ def update_product(
     product_id: str,
     request: ProductUpdateRequest,
     db: Session = Depends(get_db),
-    current_user: UserResponse = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ) -> ProductResponse:
     """Update an existing product by its unique identifier.
 
@@ -472,7 +472,7 @@ def update_product(
 def delete_product(
     product_id: str,
     db: Session = Depends(get_db),
-    current_user: UserResponse = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ) -> dict:
     """Soft-delete a product by setting is_active to False.
 

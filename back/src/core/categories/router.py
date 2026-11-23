@@ -15,7 +15,7 @@ from src.core.auth.dependencies import get_current_user
 from src.core.database import get_db
 from src.core.models.category import Category
 from src.core.models.product import Product
-from src.core.security.schemas import UserResponse
+from src.core.security.schemas import CurrentUser
 from src.core.categories.schemas import (
     CategoryCreateRequest,
     CategoryListResponse,
@@ -37,7 +37,7 @@ router = APIRouter(prefix="/categories", tags=["categories"])
 def create_category(
     request: CategoryCreateRequest,
     db: Session = Depends(get_db),
-    current_user: UserResponse = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ) -> CategoryResponse:
     """Create a new product category.
 
@@ -291,7 +291,7 @@ def update_category(
     category_id: str,
     request: CategoryUpdateRequest,
     db: Session = Depends(get_db),
-    current_user: UserResponse = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ) -> CategoryResponse:
     """Update an existing category by its unique identifier.
 
@@ -442,7 +442,7 @@ def update_category(
 def delete_category(
     category_id: str,
     db: Session = Depends(get_db),
-    current_user: UserResponse = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ) -> dict:
     """Soft-delete a category by setting is_active to False.
 

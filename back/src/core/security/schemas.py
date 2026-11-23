@@ -20,10 +20,19 @@ class UserResponse(BaseModel):
     email: str
     is_seller: bool = False
     is_verified: bool = False
-    is_admin: bool = False
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class CurrentUser(UserResponse):
+    """Internal authorization object for authenticated users.
+
+    Extends UserResponse with administrative privilege flag used
+    for authorization decisions. NOT serialized in API responses.
+    """
+
+    is_admin: bool = False
 
 
 class UserRegisterRequest(BaseModel):

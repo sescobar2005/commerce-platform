@@ -13,7 +13,7 @@ from src.core.database import get_db
 from src.core.models.seller import Seller
 from src.core.models.store import Store
 from src.core.models.user import User
-from src.core.security.schemas import UserResponse
+from src.core.security.schemas import CurrentUser
 from src.core.sellers.schemas import (
     SellerRegisterRequest,
     SellerResponse,
@@ -34,7 +34,7 @@ router = APIRouter(prefix="/sellers", tags=["sellers"])
 def register_seller(
     request: SellerRegisterRequest,
     db: Session = Depends(get_db),
-    current_user: UserResponse = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ) -> SellerResponse:
     """Register as a new seller.
 
@@ -108,7 +108,7 @@ def create_store(
     seller_id: str,
     request: StoreCreateRequest,
     db: Session = Depends(get_db),
-    current_user: UserResponse = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ) -> StoreResponse:
     """Create a new store for the authenticated seller.
 
@@ -201,7 +201,7 @@ def create_store(
 def get_seller(
     seller_id: str,
     db: Session = Depends(get_db),
-    current_user: UserResponse = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
 ) -> SellerResponse:
     """Get a seller profile by seller ID.
 
