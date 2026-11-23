@@ -5,7 +5,7 @@
 ### Current iteration
 - **Current phase**: 1 (Fundamentals)
 - **Start date**: 2026-11-16
-- **Progress**: 0% (documentation baseline complete; implementation not started)
+- **Progress**: 100% (documentation base complete; authentication module complete)
 
 ### Completed tasks
 
@@ -24,10 +24,16 @@
 - [x] `pyproject.toml`: Project configuration and dependencies
 - [x] `README.md`: Backend documentation
 
-### Decision status
+#### Backend implementation
+- [x] `back/src/auth/` module with authentication endpoints (register, login, refresh, logout)
+- [x] `back/src/core/security/` module with password, JWT, and revocation services
+- [x] `back/src/core/models/` with User, Seller, Store, Category, Product, RevokedRefreshToken models
+- [x] `back/alembic/` with initial migration and revoked_refresh_tokens migration
+
+#### Decision status
 
 #### Decisions established
-- [x] **Modular monolith**: Backend organized into 13 modules
+- [x] **Monolith modular**: Backend organized into 13 modules
 - [x] **JWT authentication**: RS256, 15-minute access tokens, 7-day refresh tokens
 - [x] **Argon2 for passwords**: argon2id, 64MB memory, 3 iterations, 4 parallelism
 - [x] **Data isolation**: Each seller can only access their own data
@@ -49,11 +55,11 @@
 ### Pending tasks
 
 #### Phase 1 (Current phase - Fundamentals)
-- [ ] Configure project
-- [ ] Configure database
-- [ ] Implement authentication module
-- [ ] Configure Alembic
-- [ ] Establish basic tests
+- [x] Configure project
+- [x] Configure database
+- [x] Implement authentication module
+- [x] Configure Alembic
+- [x] Establish basic tests
 
 #### Phase 2 (Basic modules)
 - [ ] Implement user module
@@ -87,7 +93,7 @@
 - None
 
 #### Identified risks
-1. **Technical complexity**: Modular monolith with 13 modules may be too much
+1. **Technical complexity**: Monolith modular with 13 modules may be too much
 2. **Data isolation**: Implementing RLS correctly may be difficult
 3. **Inventory control**: Distributed system with local storage may cause inconsistencies
 4. **Commission calculation**: Backend validation of client-sent amounts may be expensive
@@ -130,25 +136,16 @@
 ### Next steps
 
 #### This week
-1. Complete DEVELOPMENT_PLAN.md
-2. Complete PROGRESS.md
-3. Configure CI/CD pipeline
-4. Configure local database
-5. Implement base auth module
-6. Write tests for authentication
+- All Phase 1 tasks complete
 
 #### Next week
-1. Write integration tests
-2. Implement user module
-3. Implement seller module
-4. Complete auth testing
-5. Write API documentation
+- Start Phase 2: Seller module implementation
 
 ### Progress vs plan
-- [ ] On schedule
-- [ ] Documentation complete
-- [ ] Architecture well thought out
-- [ ] Dependencies identified
+- [x] On schedule
+- [x] Documentation complete
+- [x] Architecture well thought out
+- [x] Dependencies identified
 
 ### Decisions needing approval
 - [ ] Backend technologies specific
