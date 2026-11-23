@@ -93,6 +93,16 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
 
 
+class TokenRefreshRequest(BaseModel):
+    """Request schema for refreshing an access token using a refresh token."""
+
+    refresh_token: str = Field(
+        ...,
+        min_length=1,
+        description="Refresh token issued during login",
+    )
+
+
 class UserLoginResponse(BaseModel):
     """Response schema for user login.
 

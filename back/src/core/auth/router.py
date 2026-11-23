@@ -18,7 +18,10 @@ from src.core.security.schemas import (
     UserRegisterRequest,
     UserRegisterResponse,
     UserResponse,
+    TokenRefreshRequest,
 )
+from src.core.security.token_revocation import TokenRevocationService
+from src.core.security.token_revocation import TokenRevocationService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -182,4 +185,68 @@ def login(
             is_verified=user.is_verified,
             created_at=user.created_at,
         ),
+    )
+
+
+@router.post(
+    "/refresh",
+    response_model=TokenResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Refresh access token",
+    description="Refresh an access token using a valid refresh token.",
+)
+def refresh(
+    request: TokenRefreshRequest,
+    db: Session = Depends(get_db),
+    jwt_service: JWTService = Depends(get_jwt_service),
+) -> TokenResponse:
+    """Refresh an access token using a valid refresh token.
+
+    Args:
+        request: Refresh token request.
+        db: Database session dependency.
+        jwt_service: JWT token service dependency.
+
+    Returns:
+        TokenResponse: New access token and refresh token.
+
+    Raises:
+        HTTPException: 401 if the refresh token is invalid, expired,
+            revoked, or not a refresh token.
+        HTTPException: 404 if the user associated with the token
+            does not exist.
+    """
+    # Verify the refresh token
+    payload = jwt_service.verify_refresh_token(request.refresh_token)
+
+    jti = payload.get("jti")
+    user_id = payload.get("sub")
+
+    # Check if token is revoked
+    revocation_service = TokenRevocationService(db, jwt_service)
+    if revocation_service.is_token_revoked(jti):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token has been revoked",
+        )
+
+    # Verify user still exists
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+        )
+
+    # Generate new access token
+    new_access_token = jwt_service.create_access_token(
+        user_id=str(user.user_id),
+        username=user.username,
+        role="seller" if user.is_seller else "user",
+    )
+
+    return TokenResponse(
+        access_token=new_access_token,
+        refresh_token=request.refresh_token,
+        token_type="bearer",
     )
