@@ -23,7 +23,7 @@ class TestRefreshEndpoint:
         self.mock_db = MagicMock()
 
     def test_successful_refresh(self):
-        """Valid refresh token should return new access token."""
+        """Valid refresh token should return new access and refresh tokens (rotation)."""
         request = TokenRefreshRequest(
             refresh_token="valid_refresh_token",
         )
@@ -35,10 +35,11 @@ class TestRefreshEndpoint:
         mock_user.is_seller = False
         mock_user.is_verified = False
 
-        # First call to first() returns None (not revoked), second returns user
+        # Three first() calls: revocation check, user lookup, revoke-internal revocation check
         self.mock_db.query.return_value.filter.return_value.first.side_effect = [
             None,
             mock_user,
+            None,
         ]
         self.jwt_service.verify_refresh_token.return_value = {
             "sub": "user-123",
@@ -47,15 +48,16 @@ class TestRefreshEndpoint:
             "type": "refresh",
         }
         self.jwt_service.create_access_token.return_value = "new_access_token"
+        self.jwt_service.create_refresh_token.return_value = "new_refresh_token"
 
         result = refresh(request, self.mock_db, self.jwt_service)
 
         assert result.access_token == "new_access_token"
-        assert result.refresh_token == "valid_refresh_token"
+        assert result.refresh_token == "new_refresh_token"
         assert result.token_type == "bearer"
 
         # Verify refresh token was checked against revocation
-        self.jwt_service.verify_refresh_token.assert_called_once_with(
+        self.jwt_service.verify_refresh_token.assert_called_with(
             "valid_refresh_token"
         )
         self.jwt_service.create_access_token.assert_called_once_with(
@@ -63,6 +65,55 @@ class TestRefreshEndpoint:
             username="johndoe",
             role="user",
         )
+        self.jwt_service.create_refresh_token.assert_called_once_with(
+            user_id="user-123",
+        )
+
+        # Verify old token was revoked (rotation)
+        self.mock_db.add.assert_called_once()
+        self.mock_db.commit.assert_called()
+
+    def test_previous_token_revoked_after_rotation(self):
+        """Previous refresh token should be revoked when rotation succeeds."""
+        request = TokenRefreshRequest(
+            refresh_token="old_refresh_token",
+        )
+
+        mock_user = MagicMock()
+        mock_user.user_id = "user-123"
+        mock_user.username = "johndoe"
+        mock_user.email = "john@example.com"
+        mock_user.is_seller = False
+        mock_user.is_verified = False
+
+        self.mock_db.query.return_value.filter.return_value.first.side_effect = [
+            None,
+            mock_user,
+            None,
+        ]
+        self.jwt_service.verify_refresh_token.return_value = {
+            "sub": "user-123",
+            "jti": "old-jti",
+            "exp": int(datetime.now(timezone.utc).timestamp()) + 86400 * 7,
+            "type": "refresh",
+        }
+        self.jwt_service.create_access_token.return_value = "new_access_token"
+        self.jwt_service.create_refresh_token.return_value = "new_refresh_token"
+
+        result = refresh(request, self.mock_db, self.jwt_service)
+
+        assert result.access_token == "new_access_token"
+        assert result.refresh_token == "new_refresh_token"
+        assert result.refresh_token != "old_refresh_token"
+
+        # Verify old token was revoked (added to revocation table)
+        self.mock_db.add.assert_called_once()
+        added_obj = self.mock_db.add.call_args[0][0]
+        assert added_obj.jti == "old-jti"
+        assert added_obj.user_id == "user-123"
+
+        # Verify commit was called to persist revocation
+        self.mock_db.commit.assert_called()
 
     def test_invalid_refresh_token_raises_401(self):
         """Invalid refresh token should raise 401."""
@@ -125,7 +176,6 @@ class TestRefreshEndpoint:
         # First call to first() returns existing revoked token (found in DB)
         self.mock_db.query.return_value.filter.return_value.first.side_effect = [
             MagicMock(),  # Revoked token exists
-            mock_user,  # User exists
         ]
         self.jwt_service.verify_refresh_token.return_value = {
             "sub": "user-123",
@@ -198,6 +248,7 @@ class TestRefreshEndpoint:
         self.mock_db.query.return_value.filter.return_value.first.side_effect = [
             None,  # Not revoked
             mock_user,  # User exists
+            None,  # Not already revoked (inside revoke_refresh_token)
         ]
         self.jwt_service.verify_refresh_token.return_value = {
             "sub": "user-123",
@@ -206,9 +257,9 @@ class TestRefreshEndpoint:
             "type": "refresh",
         }
 
-        # Make commit fail during user lookup (simulate DB error)
+        # Make commit fail during revocation (simulate DB error)
         self.mock_db.commit.side_effect = Exception("DB error")
 
-        # The user is found, token generation succeeds, but commit fails
+        # revoke_refresh_token calls commit, which raises
         with pytest.raises(Exception):
             refresh(request, self.mock_db, self.jwt_service)

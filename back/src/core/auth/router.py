@@ -230,6 +230,18 @@ def refresh(
     jti = payload.get("jti")
     user_id = payload.get("sub")
 
+    # Validate required claims
+    if not jti:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token: missing jti claim",
+        )
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token: missing subject claim",
+        )
+
     # Check if token is revoked
     revocation_service = TokenRevocationService(db, jwt_service)
     if revocation_service.is_token_revoked(jti):
@@ -246,16 +258,31 @@ def refresh(
             detail="User not found",
         )
 
-    # Generate new access token
+    # Revoke the old refresh token (rotation)
+    revocation_service.revoke_refresh_token(request.refresh_token)
+
+    # Generate new access and refresh tokens
     new_access_token = jwt_service.create_access_token(
         user_id=str(user.user_id),
         username=user.username,
         role="seller" if user.is_seller else "user",
     )
+    new_refresh_token = jwt_service.create_refresh_token(
+        user_id=str(user.user_id),
+    )
+
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to rotate refresh token",
+        )
 
     return TokenResponse(
         access_token=new_access_token,
-        refresh_token=request.refresh_token,
+        refresh_token=new_refresh_token,
         token_type="bearer",
     )
 
