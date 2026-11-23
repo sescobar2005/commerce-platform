@@ -5,6 +5,7 @@ Provides user registration endpoint and related authentication routes.
 
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
+from jose import JWTError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -19,8 +20,8 @@ from src.core.security.schemas import (
     UserRegisterResponse,
     UserResponse,
     TokenRefreshRequest,
+    TokenResponse,
 )
-from src.core.security.token_revocation import TokenRevocationService
 from src.core.security.token_revocation import TokenRevocationService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -217,7 +218,13 @@ def refresh(
             does not exist.
     """
     # Verify the refresh token
-    payload = jwt_service.verify_refresh_token(request.refresh_token)
+    try:
+        payload = jwt_service.verify_refresh_token(request.refresh_token)
+    except (JWTError, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token",
+        )
 
     jti = payload.get("jti")
     user_id = payload.get("sub")
