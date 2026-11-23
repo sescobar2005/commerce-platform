@@ -11,9 +11,15 @@ from sqlalchemy.orm import Session
 from src.core.auth.dependencies import get_current_user
 from src.core.database import get_db
 from src.core.models.seller import Seller
+from src.core.models.store import Store
 from src.core.models.user import User
 from src.core.security.schemas import UserResponse
-from src.core.sellers.schemas import SellerRegisterRequest, SellerResponse
+from src.core.sellers.schemas import (
+    SellerRegisterRequest,
+    SellerResponse,
+    StoreCreateRequest,
+    StoreResponse,
+)
 
 router = APIRouter(prefix="/sellers", tags=["sellers"])
 
@@ -182,4 +188,59 @@ def create_store(
         is_active=store.is_active,
         created_at=store.created_at,
         updated_at=store.updated_at,
+    )
+
+
+@router.get(
+    "/{seller_id}",
+    response_model=SellerResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get seller profile",
+    description="Get a seller profile by seller ID.",
+)
+def get_seller(
+    seller_id: str,
+    db: Session = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
+) -> SellerResponse:
+    """Get a seller profile by seller ID.
+
+    Retrieves the public profile of a seller.
+
+    Args:
+        seller_id: The seller ID.
+        db: Database session dependency.
+        current_user: Authenticated user from JWT token.
+
+    Returns:
+        SellerResponse: The seller profile.
+
+    Raises:
+        HTTPException: 404 if seller not found.
+        HTTPException: 403 if seller does not belong to the authenticated user.
+    """
+    # Verify the seller exists
+    seller = db.query(Seller).filter(Seller.seller_id == seller_id).first()
+    if seller is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Seller not found",
+        )
+
+    # Verify the authenticated user owns this seller
+    if str(seller.seller_id) != current_user.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Seller does not belong to the authenticated user",
+        )
+
+    return SellerResponse(
+        seller_id=str(seller.seller_id),
+        store_name=seller.store_name,
+        business_name=seller.business_name,
+        tax_id=seller.tax_id,
+        payment_info_json=seller.payment_info_json,
+        bank_account=seller.bank_account,
+        is_verified=seller.is_verified,
+        created_at=seller.created_at,
     )
