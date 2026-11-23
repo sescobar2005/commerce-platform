@@ -86,3 +86,52 @@ class ProductResponse(BaseModel):
     images_urls: Optional[str]
     created_at: datetime
     updated_at: datetime
+
+
+class ProductUpdateRequest(BaseModel):
+    """Request schema for product update.
+
+    All fields are optional to support partial updates via PUT.
+    Fields omitted from the request are preserved unchanged.
+    """
+
+    name: Optional[str] = Field(
+        None,
+        min_length=1,
+        max_length=200,
+        description="Product display name",
+    )
+    description: Optional[str] = Field(
+        None,
+        max_length=2000,
+        description="Product description",
+    )
+    price: Optional[float] = Field(
+        None,
+        gt=0,
+        description="Product selling price",
+    )
+    cost: Optional[float] = Field(
+        None,
+        ge=0,
+        description="Product cost for margin calculation",
+    )
+    sku: Optional[str] = Field(
+        None,
+        min_length=1,
+        max_length=100,
+        description="Stock keeping unit identifier",
+    )
+    stock: Optional[int] = Field(
+        None,
+        ge=0,
+        description="Current inventory quantity",
+    )
+    is_active: Optional[bool] = Field(
+        None,
+        description="Whether the product is active and visible",
+    )
+    images_urls: Optional[str] = Field(
+        None,
+        description="Product image URLs stored as JSON array",
+    )

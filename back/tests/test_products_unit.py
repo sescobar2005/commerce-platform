@@ -15,8 +15,11 @@ from src.core.models.category import Category
 from src.core.models.product import Product
 from src.core.models.seller import Seller
 from src.core.models.store import Store
-from src.core.products.router import create_product, get_product
-from src.core.products.schemas import ProductCreateRequest
+from src.core.products.router import create_product, get_product, update_product
+from src.core.products.schemas import (
+    ProductCreateRequest,
+    ProductUpdateRequest,
+)
 from src.core.security.schemas import UserResponse
 
 
@@ -297,3 +300,182 @@ class TestCreateProductEndpoint:
 
         with pytest.raises(Exception):
             get_product(product_id, self.mock_db)
+
+    def make_update_request(self):
+        return ProductUpdateRequest(
+            name="Updated Product",
+            price=39.99,
+            stock=50,
+        )
+
+    def test_successful_product_update(self):
+        """Valid update should return the updated product."""
+        product_id = "product-123"
+        request = self.make_update_request()
+        current_user = self.make_current_user()
+
+        product = self.make_product()
+        seller = self.make_seller()
+        store = self.make_store()
+
+        # Three first() calls: seller lookup, product lookup, store ownership check
+        self.mock_db.query.return_value.filter.return_value.first.side_effect = [
+            seller,
+            product,
+            store,
+        ]
+
+        result = update_product(product_id, request, self.mock_db, current_user)
+
+        assert result.product_id == "product-123"
+        assert result.name == "Updated Product"
+        assert result.description == "A test product"  # preserved
+        assert result.price == 39.99
+        assert result.cost == 15.00  # preserved
+        assert result.sku == "SKU-001"  # preserved
+        assert result.stock == 50
+        assert result.is_active is True  # preserved
+
+        self.mock_db.add.assert_called_once()
+        self.mock_db.commit.assert_called_once()
+        self.mock_db.refresh.assert_called_once()
+
+    def test_product_update_not_found_raises_404(self):
+        """Nonexistent product ID should raise 404."""
+        product_id = "nonexistent-product"
+        request = self.make_update_request()
+        current_user = self.make_current_user()
+
+        seller = self.make_seller()
+
+        # First call returns seller, second returns None (product not found)
+        self.mock_db.query.return_value.filter.return_value.first.side_effect = [
+            seller,
+            None,
+        ]
+
+        with pytest.raises(HTTPException) as exc_info:
+            update_product(product_id, request, self.mock_db, current_user)
+
+        assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
+        assert "product" in exc_info.value.detail.lower()
+
+    def test_product_update_no_seller_profile_raises_403(self):
+        """User without seller profile should raise 403."""
+        product_id = "product-123"
+        request = self.make_update_request()
+        current_user = self.make_current_user()
+
+        # First call returns None (no seller profile found)
+        self.mock_db.query.return_value.filter.return_value.first.return_value = None
+
+        with pytest.raises(HTTPException) as exc_info:
+            update_product(product_id, request, self.mock_db, current_user)
+
+        assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
+        assert "seller profile" in exc_info.value.detail.lower()
+
+    def test_product_update_not_owner_raises_403(self):
+        """Store owned by another seller should raise 403."""
+        product_id = "product-123"
+        request = self.make_update_request()
+        current_user = self.make_current_user()
+
+        seller = self.make_seller()
+        product = self.make_product()
+        store_owned_by_other = self.make_store(seller_id="user-456")
+
+        # First call returns seller, second returns product, third returns store owned by another user
+        self.mock_db.query.return_value.filter.return_value.first.side_effect = [
+            seller,
+            product,
+            store_owned_by_other,
+        ]
+
+        with pytest.raises(HTTPException) as exc_info:
+            update_product(product_id, request, self.mock_db, current_user)
+
+        assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
+        assert "belong" in exc_info.value.detail.lower()
+
+    def test_product_update_preserves_omitted_fields(self):
+        """Fields omitted from update request should remain unchanged."""
+        product_id = "product-123"
+        request = ProductUpdateRequest(price=49.99)  # Only price
+        current_user = self.make_current_user()
+
+        product = self.make_product()
+        seller = self.make_seller()
+        store = self.make_store()
+
+        self.mock_db.query.return_value.filter.return_value.first.side_effect = [
+            seller,
+            product,
+            store,
+        ]
+
+        result = update_product(product_id, request, self.mock_db, current_user)
+
+        assert result.price == 49.99  # updated
+        assert result.name == "Test Product"  # preserved
+        assert result.description == "A test product"  # preserved
+        assert result.sku == "SKU-001"  # preserved
+        assert result.stock == 100  # preserved
+        assert result.is_active is True  # preserved
+
+    def test_product_update_duplicate_sku_raises_409(self):
+        """Duplicate SKU should raise 409 via IntegrityError."""
+        product_id = "product-123"
+        request = ProductUpdateRequest(sku="DUPLICATE-SKU")
+        current_user = self.make_current_user()
+
+        product = self.make_product()
+        seller = self.make_seller()
+        store = self.make_store()
+
+        self.mock_db.query.return_value.filter.return_value.first.side_effect = [
+            seller,
+            product,
+            store,
+        ]
+
+        # Simulate IntegrityError on commit
+        self.mock_db.commit.side_effect = IntegrityError(
+            "duplicate key", params={}, orig=None
+        )
+
+        with pytest.raises(HTTPException) as exc_info:
+            update_product(product_id, request, self.mock_db, current_user)
+
+        assert exc_info.value.status_code == status.HTTP_409_CONFLICT
+        assert self.mock_db.rollback.called
+
+    def test_product_update_invalid_price_raises_validation_error(self):
+        """Invalid price (negative) should raise ValidationError."""
+        product_id = "product-123"
+        current_user = self.make_current_user()
+
+        with pytest.raises(Exception):
+            ProductUpdateRequest(price=-10.00)  # Invalid: price must be > 0
+
+    def test_product_update_database_failure_raises_exception(self):
+        """Database error during update should raise an exception."""
+        product_id = "product-123"
+        request = ProductUpdateRequest(name="Updated Product")
+        current_user = self.make_current_user()
+
+        product = self.make_product()
+        seller = self.make_seller()
+        store = self.make_store()
+
+        self.mock_db.query.return_value.filter.return_value.first.side_effect = [
+            seller,
+            product,
+            store,
+        ]
+
+        # Simulate DB error on commit
+        self.mock_db.commit.side_effect = Exception("DB connection error")
+
+        with pytest.raises(Exception):
+            update_product(product_id, request, self.mock_db, current_user)

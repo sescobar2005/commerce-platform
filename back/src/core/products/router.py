@@ -18,6 +18,7 @@ from src.core.security.schemas import UserResponse
 from src.core.products.schemas import (
     ProductCreateRequest,
     ProductResponse,
+    ProductUpdateRequest,
 )
 
 router = APIRouter(prefix="/products", tags=["products"])
@@ -161,6 +162,130 @@ def get_product(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Product not found",
+        )
+
+    return ProductResponse(
+        product_id=str(product.product_id),
+        store_id=str(product.store_id),
+        category_id=str(product.category_id),
+        name=product.name,
+        description=product.description,
+        price=product.price,
+        cost=product.cost,
+        sku=product.sku,
+        stock=product.stock,
+        is_active=product.is_active,
+        images_urls=product.images_urls,
+        created_at=product.created_at,
+        updated_at=product.updated_at,
+    )
+
+
+@router.put(
+    "/{product_id}",
+    response_model=ProductResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Update a product by ID",
+    description="Update an existing product. Only the owning seller can update a product.",
+)
+def update_product(
+    product_id: str,
+    request: ProductUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
+) -> ProductResponse:
+    """Update an existing product by its unique identifier.
+
+    Only the seller who owns the store associated with the product
+    can update it. Fields omitted from the request are preserved
+    unchanged. The product cannot be moved to another store.
+
+    Args:
+        product_id: The unique product identifier.
+        request: Product update request (partial fields allowed).
+        db: Database session dependency.
+        current_user: Authenticated user from JWT token.
+
+    Returns:
+        ProductResponse: The updated product.
+
+    Raises:
+        HTTPException: 401 if not authenticated.
+        HTTPException: 403 if user has no seller profile or
+            does not own the product's store.
+        HTTPException: 404 if the product does not exist.
+        HTTPException: 409 if the new SKU already exists.
+        HTTPException: 500 if database error occurs.
+    """
+    # Verify the user has a seller profile
+    seller = db.query(Seller).filter(Seller.seller_id == current_user.user_id).first()
+    if seller is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User does not have a seller profile",
+        )
+
+    # Retrieve the product by ID
+    product = (
+        db.query(Product).filter(Product.product_id == product_id).first()
+    )
+    if product is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Product not found",
+        )
+
+    # Verify the store exists and the authenticated seller owns it
+    store = db.query(Store).filter(Store.store_id == product.store_id).first()
+    if store is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Store not found",
+        )
+
+    # Verify the authenticated seller owns the product's store
+    if str(store.seller_id) != current_user.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Product does not belong to the authenticated seller",
+        )
+
+    # Prevent changing store_id (ownership cannot be transferred)
+    if (
+        getattr(request, "store_id", None) is not None
+        and str(getattr(request, "store_id")) != str(product.store_id)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot change the owning store of a product",
+        )
+
+    # Prevent changing category_id (reclassification not allowed via update)
+    if (
+        getattr(request, "category_id", None) is not None
+        and str(getattr(request, "category_id")) != str(product.category_id)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot change the category of a product via update",
+        )
+
+    # Apply updates for fields that are present in the request
+    update_data = request.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        if field == "store_id" or field == "category_id":
+            continue  # ownership fields already validated above
+        setattr(product, field, value)
+
+    try:
+        db.add(product)
+        db.commit()
+        db.refresh(product)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Product SKU already exists",
         )
 
     return ProductResponse(
