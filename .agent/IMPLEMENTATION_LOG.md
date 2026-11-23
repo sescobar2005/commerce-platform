@@ -260,3 +260,15 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Tests or checks | 5/5 unit tests pass; 63/63 total security/auth tests pass; Python syntax verified via `py_compile` |
 | Commit hashes | `3957e42` (registration endpoint), `bb0f58c` (unit tests) |
 | Observations | Implemented POST /api/v1/auth/register endpoint. Accepts UserRegisterRequest (username, email, password). Checks username and email uniqueness (409 CONFLICT if duplicate). Hashes password with PasswordService (Argon2id). Creates User ORM instance with is_seller=False, is_verified=False. Persists via SQLAlchemy session with commit. Returns UserRegisterResponse (no password_hash). Handles IntegrityError with rollback and 409 CONFLICT. 5 unit tests covering successful registration, duplicate username, duplicate email, integrity error rollback, password hashing. No JWT generation during registration (per task scope).
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-17 |
+| Phase | Phase 1 (Fundamentals) — Authentication endpoints |
+| Completed unit | User logout endpoint (POST /api/v1/auth/logout) + unit tests |
+| Files affected | `back/src/core/auth/router.py`, `back/tests/test_auth_logout_unit.py` |
+| Tests or checks | 6/6 unit tests pass; 73/73 total security/auth tests pass; Python syntax verified via `py_compile` |
+| Commit hashes | `28c2678` (logout endpoint), `bb0f58c` (unit tests) |
+| Observations | Implemented POST /api/v1/auth/logout endpoint. Accepts UserRefreshRequest (refresh_token) and JWT access token via Authorization header. Verifies access token validity and refresh token ownership (sub match). Revokes refresh token via TokenRevocationService. Returns {message: "Successfully logged out"}. Consistent 401 for invalid/missing access token or invalid/expired refresh token. Consistent 403 if refresh token belongs to another user. Idempotent: revoking already-revoked token returns success. 6 unit tests covering successful logout, invalid/expired refresh token, token belonging to another user, repeated logout (idempotent), input validation (empty refresh token). No access token revocation (access tokens expire naturally after 15 minutes). |
