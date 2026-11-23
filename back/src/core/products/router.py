@@ -129,3 +129,52 @@ def create_product(
         created_at=product.created_at,
         updated_at=product.updated_at,
     )
+
+
+@router.get(
+    "/{product_id}",
+    response_model=ProductResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get a product by ID",
+    description="Retrieve a product by its unique identifier.",
+)
+def get_product(
+    product_id: str,
+    db: Session = Depends(get_db),
+) -> ProductResponse:
+    """Retrieve a product by its unique identifier.
+
+    Args:
+        product_id: The unique product identifier.
+        db: Database session dependency.
+
+    Returns:
+        ProductResponse: The requested product.
+
+    Raises:
+        HTTPException: 404 if the product does not exist.
+    """
+    product = (
+        db.query(Product).filter(Product.product_id == product_id).first()
+    )
+    if product is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Product not found",
+        )
+
+    return ProductResponse(
+        product_id=str(product.product_id),
+        store_id=str(product.store_id),
+        category_id=str(product.category_id),
+        name=product.name,
+        description=product.description,
+        price=product.price,
+        cost=product.cost,
+        sku=product.sku,
+        stock=product.stock,
+        is_active=product.is_active,
+        images_urls=product.images_urls,
+        created_at=product.created_at,
+        updated_at=product.updated_at,
+    )

@@ -15,7 +15,7 @@ from src.core.models.category import Category
 from src.core.models.product import Product
 from src.core.models.seller import Seller
 from src.core.models.store import Store
-from src.core.products.router import create_product
+from src.core.products.router import create_product, get_product
 from src.core.products.schemas import ProductCreateRequest
 from src.core.security.schemas import UserResponse
 
@@ -239,3 +239,61 @@ class TestCreateProductEndpoint:
 
         with pytest.raises(Exception):
             create_product(request, self.mock_db, current_user)
+
+    def make_product(self):
+        product = MagicMock(spec=Product)
+        product.product_id = "product-123"
+        product.store_id = "store-123"
+        product.category_id = "cat-456"
+        product.name = "Test Product"
+        product.description = "A test product"
+        product.price = 29.99
+        product.cost = 15.00
+        product.sku = "SKU-001"
+        product.stock = 100
+        product.is_active = True
+        product.images_urls = None
+        product.created_at = datetime(2024, 1, 1, 12, 0, 0)
+        product.updated_at = datetime(2024, 1, 1, 12, 0, 0)
+        return product
+
+    def test_successful_product_retrieval(self):
+        """Valid product ID should return the product."""
+        product_id = "product-123"
+        product = self.make_product()
+
+        self.mock_db.query.return_value.filter.return_value.first.return_value = product
+
+        result = get_product(product_id, self.mock_db)
+
+        assert result.product_id == "product-123"
+        assert result.store_id == "store-123"
+        assert result.category_id == "cat-456"
+        assert result.name == "Test Product"
+        assert result.description == "A test product"
+        assert result.price == 29.99
+        assert result.cost == 15.00
+        assert result.sku == "SKU-001"
+        assert result.stock == 100
+        assert result.is_active is True
+
+    def test_product_not_found_raises_404(self):
+        """Nonexistent product ID should raise 404."""
+        product_id = "nonexistent-product"
+
+        self.mock_db.query.return_value.filter.return_value.first.return_value = None
+
+        with pytest.raises(HTTPException) as exc_info:
+            get_product(product_id, self.mock_db)
+
+        assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
+        assert "product" in exc_info.value.detail.lower()
+
+    def test_database_query_failure_raises_exception(self):
+        """Database query error should raise an exception."""
+        product_id = "product-123"
+
+        self.mock_db.query.side_effect = Exception("DB connection error")
+
+        with pytest.raises(Exception):
+            get_product(product_id, self.mock_db)
