@@ -1,6 +1,6 @@
 """Product router for Plataforma de Comercio.
 
-Provides product creation endpoint for authenticated sellers.
+Provides product management endpoints for authenticated sellers.
 """
 
 from datetime import datetime, timezone
@@ -303,3 +303,89 @@ def update_product(
         created_at=product.created_at,
         updated_at=product.updated_at,
     )
+
+
+@router.delete(
+    "/{product_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Delete a product by ID",
+    description="Soft-delete a product by setting is_active to False. Only the owning seller can delete a product.",
+)
+def delete_product(
+    product_id: str,
+    db: Session = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
+) -> dict:
+    """Soft-delete a product by setting is_active to False.
+
+    Only the seller who owns the store associated with the product
+    can delete it. The product record is preserved (soft deletion)
+    to maintain referential integrity with any related records.
+
+    Args:
+        product_id: The unique product identifier.
+        db: Database session dependency.
+        current_user: Authenticated user from JWT token.
+
+    Returns:
+        dict: A status message confirming the product was deactivated.
+
+    Raises:
+        HTTPException: 401 if not authenticated.
+        HTTPException: 403 if user has no seller profile or
+            does not own the product's store.
+        HTTPException: 404 if the product does not exist.
+        HTTPException: 500 if database error occurs.
+    """
+    # Verify the user has a seller profile
+    seller = db.query(Seller).filter(Seller.seller_id == current_user.user_id).first()
+    if seller is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User does not have a seller profile",
+        )
+
+    # Retrieve the product by ID
+    product = (
+        db.query(Product).filter(Product.product_id == product_id).first()
+    )
+    if product is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Product not found",
+        )
+
+    # Verify the store exists and the authenticated seller owns it
+    store = db.query(Store).filter(Store.store_id == product.store_id).first()
+    if store is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Store not found",
+        )
+
+    # Verify the authenticated seller owns the product's store
+    if str(store.seller_id) != current_user.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Product does not belong to the authenticated seller",
+        )
+
+    # Soft-delete: set is_active to False
+    product.is_active = False
+
+    try:
+        db.add(product)
+        db.commit()
+        db.refresh(product)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Failed to deactivate product",
+        )
+
+    return {
+        "message": "Product deactivated successfully",
+        "product_id": str(product.product_id),
+        "is_active": product.is_active,
+    }

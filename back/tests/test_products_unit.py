@@ -15,7 +15,7 @@ from src.core.models.category import Category
 from src.core.models.product import Product
 from src.core.models.seller import Seller
 from src.core.models.store import Store
-from src.core.products.router import create_product, get_product, update_product
+from src.core.products.router import create_product, get_product, update_product, delete_product
 from src.core.products.schemas import (
     ProductCreateRequest,
     ProductUpdateRequest,
@@ -479,3 +479,129 @@ class TestCreateProductEndpoint:
 
         with pytest.raises(Exception):
             update_product(product_id, request, self.mock_db, current_user)
+
+    def test_successful_product_deactivation(self):
+        """Valid product ID should soft-delete (is_active = False)."""
+        product_id = "product-123"
+        current_user = self.make_current_user()
+
+        product = self.make_product()
+        product.is_active = True
+        seller = self.make_seller()
+        store = self.make_store()
+
+        # Three first() calls: seller lookup, product lookup, store lookup
+        self.mock_db.query.return_value.filter.return_value.first.side_effect = [
+            seller,
+            product,
+            store,
+        ]
+
+        result = delete_product(product_id, self.mock_db, current_user)
+
+        assert result["message"] == "Product deactivated successfully"
+        assert result["product_id"] == "product-123"
+        assert result["is_active"] is False
+        assert product.is_active is False
+
+        self.mock_db.add.assert_called_once()
+        self.mock_db.commit.assert_called_once()
+        self.mock_db.refresh.assert_called_once()
+
+    def test_product_deactivation_not_found_raises_404(self):
+        """Nonexistent product ID should raise 404."""
+        product_id = "nonexistent-product"
+        current_user = self.make_current_user()
+
+        seller = self.make_seller()
+
+        # First call returns seller, second returns None (product not found)
+        self.mock_db.query.return_value.filter.return_value.first.side_effect = [
+            seller,
+            None,
+        ]
+
+        with pytest.raises(HTTPException) as exc_info:
+            delete_product(product_id, self.mock_db, current_user)
+
+        assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
+        assert "product" in exc_info.value.detail.lower()
+
+    def test_product_deactivation_no_seller_profile_raises_403(self):
+        """User without seller profile should raise 403."""
+        product_id = "product-123"
+        current_user = self.make_current_user()
+
+        # First call returns None (no seller profile found)
+        self.mock_db.query.return_value.filter.return_value.first.return_value = None
+
+        with pytest.raises(HTTPException) as exc_info:
+            delete_product(product_id, self.mock_db, current_user)
+
+        assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
+        assert "seller profile" in exc_info.value.detail.lower()
+
+    def test_product_deactivation_not_owner_raises_403(self):
+        """Store owned by another seller should raise 403."""
+        product_id = "product-123"
+        current_user = self.make_current_user()
+
+        seller = self.make_seller()
+        product = self.make_product()
+        store_owned_by_other = self.make_store(seller_id="user-456")
+
+        # First call returns seller, second returns product, third returns store owned by another user
+        self.mock_db.query.return_value.filter.return_value.first.side_effect = [
+            seller,
+            product,
+            store_owned_by_other,
+        ]
+
+        with pytest.raises(HTTPException) as exc_info:
+            delete_product(product_id, self.mock_db, current_user)
+
+        assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
+        assert "belong" in exc_info.value.detail.lower()
+
+    def test_product_already_inactive_still_deactivates(self):
+        """Product already inactive can still be deactivated (no error)."""
+        product_id = "product-123"
+        current_user = self.make_current_user()
+
+        product = self.make_product()
+        product.is_active = False  # Already inactive
+        seller = self.make_seller()
+        store = self.make_store()
+
+        self.mock_db.query.return_value.filter.return_value.first.side_effect = [
+            seller,
+            product,
+            store,
+        ]
+
+        result = delete_product(product_id, self.mock_db, current_user)
+
+        assert result["is_active"] is False
+        assert product.is_active is False
+        self.mock_db.commit.assert_called_once()
+
+    def test_product_deactivation_database_failure_raises_exception(self):
+        """Database error during deactivation should raise an exception."""
+        product_id = "product-123"
+        current_user = self.make_current_user()
+
+        product = self.make_product()
+        seller = self.make_seller()
+        store = self.make_store()
+
+        self.mock_db.query.return_value.filter.return_value.first.side_effect = [
+            seller,
+            product,
+            store,
+        ]
+
+        # Simulate DB error on commit
+        self.mock_db.commit.side_effect = Exception("DB connection error")
+
+        with pytest.raises(Exception):
+            delete_product(product_id, self.mock_db, current_user)
