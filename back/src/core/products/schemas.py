@@ -5,9 +5,11 @@ responses.
 """
 
 from datetime import datetime
-from typing import Optional
+from typing import Generic, List, Optional, TypeVar
 
 from pydantic import BaseModel, Field
+
+T = TypeVar("T")
 
 
 class ProductCreateRequest(BaseModel):
@@ -135,3 +137,17 @@ class ProductUpdateRequest(BaseModel):
         None,
         description="Product image URLs stored as JSON array",
     )
+
+
+class ProductListResponse(BaseModel):
+    """Response schema for product listing with pagination.
+
+    Returns a paginated list of products with total count and
+    pagination metadata.
+    """
+
+    items: List[ProductResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int

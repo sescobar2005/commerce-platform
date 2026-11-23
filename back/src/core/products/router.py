@@ -5,8 +5,9 @@ Provides product management endpoints for authenticated sellers.
 
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import asc, desc, func
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from src.core.auth.dependencies import get_current_user
 from src.core.database import get_db
@@ -17,6 +18,7 @@ from src.core.models.store import Store
 from src.core.security.schemas import UserResponse
 from src.core.products.schemas import (
     ProductCreateRequest,
+    ProductListResponse,
     ProductResponse,
     ProductUpdateRequest,
 )
@@ -129,6 +131,162 @@ def create_product(
         images_urls=product.images_urls,
         created_at=product.created_at,
         updated_at=product.updated_at,
+    )
+
+
+@router.get(
+    "/",
+    response_model=ProductListResponse,
+    status_code=status.HTTP_200_OK,
+    summary="List products with filters",
+    description="Retrieve a paginated list of products with optional search, filters, and sorting.",
+)
+def list_products(
+    search: Optional[str] = None,
+    category_id: Optional[str] = None,
+    store_id: Optional[str] = None,
+    min_price: Optional[float] = None,
+    max_price: Optional[float] = None,
+    is_active: Optional[bool] = True,
+    sort: Optional[str] = "newest",
+    page: int = 1,
+    page_size: int = 20,
+    db: Session = Depends(get_db),
+) -> ProductListResponse:
+    """Retrieve a paginated list of products.
+
+    Supports search by name, category/store filtering, price range
+    filtering, active status filtering, sorting, and pagination.
+
+    Args:
+        search: Optional name search term (case-insensitive).
+        category_id: Optional category filter.
+        store_id: Optional store filter.
+        min_price: Optional minimum price.
+        max_price: Optional maximum price.
+        is_active: Optional active status filter (defaults to True).
+        sort: Optional sort order (price_asc, price_desc, newest, oldest).
+        page: Page number (default 1).
+        page_size: Items per page (default 20, max 100).
+        db: Database session dependency.
+
+    Returns:
+        ProductListResponse: Paginated product list with metadata.
+
+    Raises:
+        HTTPException: 400 if min_price > max_price, page < 1,
+            page_size > 100, or invalid sort.
+        HTTPException: 500 if database error occurs.
+    """
+    # Validate pagination
+    if page < 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="page must be at least 1",
+        )
+    if page_size < 1 or page_size > 100:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="page_size must be between 1 and 100",
+        )
+
+    # Validate price range
+    if min_price is not None and min_price < 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="min_price must be non-negative",
+        )
+    if max_price is not None and max_price < 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="max_price must be non-negative",
+        )
+    if min_price is not None and max_price is not None and min_price > max_price:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="min_price cannot be greater than max_price",
+        )
+
+    # Validate sort order
+    allowed_sorts = {"price_asc", "price_desc", "newest", "oldest"}
+    if sort not in allowed_sorts:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid sort '{sort}'. Allowed: {', '.join(sorted(allowed_sorts))}",
+        )
+
+    # Build base query with eager loading to avoid N+1
+    query = db.query(Product).options(
+        joinedload(Product.store),
+        joinedload(Product.category),
+    )
+
+    # Default to active products only
+    query = query.filter(Product.is_active == True)  # noqa: E712
+
+    # Apply search filter (case-insensitive)
+    if search:
+        query = query.filter(
+            func.lower(Product.name).contains(func.lower(search))
+        )
+
+    # Apply category filter
+    if category_id:
+        query = query.filter(Product.category_id == category_id)
+
+    # Apply store filter
+    if store_id:
+        query = query.filter(Product.store_id == store_id)
+
+    # Apply price range filters
+    if min_price is not None:
+        query = query.filter(Product.price >= min_price)
+    if max_price is not None:
+        query = query.filter(Product.price <= max_price)
+
+    # Get total count before pagination
+    total = query.count()
+
+    # Apply sorting
+    if sort == "price_asc":
+        query = query.order_by(asc(Product.price))
+    elif sort == "price_desc":
+        query = query.order_by(desc(Product.price))
+    elif sort == "newest":
+        query = query.order_by(desc(Product.created_at))
+    elif sort == "oldest":
+        query = query.order_by(asc(Product.created_at))
+
+    # Apply pagination
+    offset = (page - 1) * page_size
+    products = query.offset(offset).limit(page_size).all()
+
+    # Calculate total pages
+    total_pages = (total + page_size - 1) // page_size if total > 0 else 0
+
+    return ProductListResponse(
+        items=[
+            ProductResponse(
+                product_id=str(p.product_id),
+                store_id=str(p.store_id),
+                category_id=str(p.category_id),
+                name=p.name,
+                description=p.description,
+                price=p.price,
+                cost=p.cost,
+                sku=p.sku,
+                stock=p.stock,
+                is_active=p.is_active,
+                images_urls=p.images_urls,
+                created_at=p.created_at,
+                updated_at=p.updated_at,
+            )
+            for p in products
+        ],
+        total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages,
     )
 
 

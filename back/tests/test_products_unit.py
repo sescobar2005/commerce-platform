@@ -15,9 +15,16 @@ from src.core.models.category import Category
 from src.core.models.product import Product
 from src.core.models.seller import Seller
 from src.core.models.store import Store
-from src.core.products.router import create_product, get_product, update_product, delete_product
+from src.core.products.router import (
+    create_product,
+    delete_product,
+    get_product,
+    list_products,
+    update_product,
+)
 from src.core.products.schemas import (
     ProductCreateRequest,
+    ProductListResponse,
     ProductUpdateRequest,
 )
 from src.core.security.schemas import UserResponse
@@ -605,3 +612,234 @@ class TestCreateProductEndpoint:
 
         with pytest.raises(Exception):
             delete_product(product_id, self.mock_db, current_user)
+
+    def make_product_mock(
+        self,
+        product_id="product-1",
+        store_id="store-123",
+        category_id="cat-456",
+        name="Test Product",
+        price=29.99,
+        sku="SKU-001",
+        is_active=True,
+    ):
+        product = MagicMock(spec=Product)
+        product.product_id = product_id
+        product.store_id = store_id
+        product.category_id = category_id
+        product.name = name
+        product.description = "A test product"
+        product.price = price
+        product.cost = 15.00
+        product.sku = sku
+        product.stock = 100
+        product.is_active = is_active
+        product.images_urls = None
+        product.created_at = datetime(2024, 1, 1, 12, 0, 0)
+        product.updated_at = datetime(2024, 1, 1, 12, 0, 0)
+        return product
+
+    def mock_query_chain(self, products_list, total=None):
+        """Set up a mock query chain that returns products_list.
+
+        All filter/order/offset/limit calls return the same chainable
+        mock so that multiple .filter() calls work correctly.
+        """
+        if total is None:
+            total = len(products_list)
+
+        mock_query = MagicMock()
+
+        # query() -> mock_query
+        self.mock_db.query.return_value = mock_query
+        # .options(...) -> mock_query (chainable)
+        mock_query.options.return_value = mock_query
+        # .filter(...) -> mock_query (chainable, multiple calls OK)
+        mock_query.filter.return_value = mock_query
+        # .count() -> total
+        mock_query.count.return_value = total
+        # .order_by(...) -> mock_query (chainable)
+        mock_query.order_by.return_value = mock_query
+        # .offset(...) -> mock_query (chainable)
+        mock_query.offset.return_value = mock_query
+        # .limit(...) -> mock_query (chainable)
+        mock_query.limit.return_value = mock_query
+        # .all() -> products_list
+        mock_query.all.return_value = products_list
+
+        return mock_query
+
+    def test_default_listing(self):
+        """Default listing returns active products paginated."""
+        products = [self.make_product_mock(f"product-{i}") for i in range(3)]
+        self.mock_query_chain(products, total=3)
+
+        result = list_products(db=self.mock_db)
+
+        assert isinstance(result, ProductListResponse)
+        assert result.total == 3
+        assert result.page == 1
+        assert result.page_size == 20
+        assert result.total_pages == 1
+        assert len(result.items) == 3
+        assert result.items[0].product_id == "product-0"
+        assert result.items[0].is_active is True
+
+    def test_listing_excludes_inactive_by_default(self):
+        """Default listing filters to is_active=True."""
+        products = [self.make_product_mock("product-1", is_active=True)]
+        self.mock_query_chain(products, total=1)
+
+        result = list_products(db=self.mock_db)
+
+        assert len(result.items) == 1
+        assert result.items[0].is_active is True
+        # Verify is_active=True filter was applied
+        mock_filter_all = self.mock_db.query.return_value.options.return_value.filter
+        assert mock_filter_all.call_count >= 1
+
+    def test_listing_search_by_name(self):
+        """Search filters products by name case-insensitively."""
+        products = [self.make_product_mock("product-1", name="Apple Watch")]
+        self.mock_query_chain(products, total=1)
+
+        result = list_products(search="apple", db=self.mock_db)
+
+        assert len(result.items) == 1
+        assert result.items[0].name == "Apple Watch"
+
+    def test_listing_category_filter(self):
+        """Category filter narrows results."""
+        products = [self.make_product_mock("product-1", category_id="cat-456")]
+        self.mock_query_chain(products, total=1)
+
+        result = list_products(category_id="cat-456", db=self.mock_db)
+
+        assert len(result.items) == 1
+        assert result.items[0].category_id == "cat-456"
+
+    def test_listing_store_filter(self):
+        """Store filter narrows results."""
+        products = [self.make_product_mock("product-1", store_id="store-123")]
+        self.mock_query_chain(products, total=1)
+
+        result = list_products(store_id="store-123", db=self.mock_db)
+
+        assert len(result.items) == 1
+        assert result.items[0].store_id == "store-123"
+
+    def test_listing_price_range_filter(self):
+        """Price range filters products."""
+        products = [self.make_product_mock("product-1", price=29.99)]
+        self.mock_query_chain(products, total=1)
+
+        result = list_products(min_price=20.0, max_price=50.0, db=self.mock_db)
+
+        assert len(result.items) == 1
+        assert result.items[0].price == 29.99
+
+    def test_listing_combined_filters(self):
+        """Multiple filters combine correctly."""
+        products = [self.make_product_mock("product-1", store_id="store-123", category_id="cat-456")]
+        self.mock_query_chain(products, total=1)
+
+        result = list_products(
+            store_id="store-123",
+            category_id="cat-456",
+            min_price=10.0,
+            max_price=100.0,
+            db=self.mock_db,
+        )
+
+        assert len(result.items) == 1
+
+    def test_listing_price_range_invalid_raises_400(self):
+        """min_price > max_price raises 400."""
+        with pytest.raises(HTTPException) as exc_info:
+            list_products(min_price=100.0, max_price=10.0, db=self.mock_db)
+
+        assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_listing_sort_price_asc(self):
+        """Sort by price ascending."""
+        products = [self.make_product_mock("product-1", price=10.0)]
+        self.mock_query_chain(products, total=1)
+
+        result = list_products(sort="price_asc", db=self.mock_db)
+
+        assert len(result.items) == 1
+
+    def test_listing_sort_price_desc(self):
+        """Sort by price descending."""
+        products = [self.make_product_mock("product-1", price=50.0)]
+        self.mock_query_chain(products, total=1)
+
+        result = list_products(sort="price_desc", db=self.mock_db)
+
+        assert len(result.items) == 1
+
+    def test_listing_sort_newest(self):
+        """Sort by newest first."""
+        products = [self.make_product_mock("product-1")]
+        self.mock_query_chain(products, total=1)
+
+        result = list_products(sort="newest", db=self.mock_db)
+
+        assert len(result.items) == 1
+
+    def test_listing_sort_oldest(self):
+        """Sort by oldest first."""
+        products = [self.make_product_mock("product-1")]
+        self.mock_query_chain(products, total=1)
+
+        result = list_products(sort="oldest", db=self.mock_db)
+
+        assert len(result.items) == 1
+
+    def test_listing_invalid_sort_raises_400(self):
+        """Invalid sort value raises 400."""
+        with pytest.raises(HTTPException) as exc_info:
+            list_products(sort="invalid_sort", db=self.mock_db)
+
+        assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_listing_pagination(self):
+        """Pagination returns correct page and page_size."""
+        products = [self.make_product_mock(f"product-{i}") for i in range(5)]
+        self.mock_query_chain(products, total=25)
+
+        result = list_products(page=2, page_size=5, db=self.mock_db)
+
+        assert result.page == 2
+        assert result.page_size == 5
+        assert result.total == 25
+        assert result.total_pages == 5
+        assert len(result.items) == 5
+
+    def test_listing_empty_results(self):
+        """Empty results return empty items list."""
+        self.mock_query_chain([], total=0)
+
+        result = list_products(db=self.mock_db)
+
+        assert result.total == 0
+        assert result.total_pages == 0
+        assert result.items == []
+
+    def test_listing_page_size_max_enforced(self):
+        """page_size is capped at 100."""
+        products = []
+        self.mock_query_chain(products, total=0)
+
+        # page_size > 100 should raise 400
+        with pytest.raises(HTTPException) as exc_info:
+            list_products(page_size=101, db=self.mock_db)
+
+        assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_listing_database_error_raises_exception(self):
+        """Database error during listing raises an exception."""
+        self.mock_db.query.side_effect = Exception("DB connection error")
+
+        with pytest.raises(Exception):
+            list_products(db=self.mock_db)
