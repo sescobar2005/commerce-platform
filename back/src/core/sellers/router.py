@@ -89,3 +89,97 @@ def register_seller(
         is_verified=seller.is_verified,
         created_at=seller.created_at,
     )
+
+
+@router.post(
+    "/{seller_id}/stores",
+    response_model=StoreResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a store",
+    description="Create a new store for the authenticated seller.",
+)
+def create_store(
+    seller_id: str,
+    request: StoreCreateRequest,
+    db: Session = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
+) -> StoreResponse:
+    """Create a new store for the authenticated seller.
+
+    Creates a store associated with the authenticated seller.
+    A seller can only create stores for themselves.
+
+    Args:
+        seller_id: The seller ID.
+        request: Store creation request.
+        db: Database session dependency.
+        current_user: Authenticated user from JWT token.
+
+    Returns:
+        StoreResponse: The created store profile.
+
+    Raises:
+        HTTPException: 404 if seller not found.
+        HTTPException: 403 if seller belongs to another user.
+        HTTPException: 409 if store slug already exists.
+        HTTPException: 500 if database error occurs.
+    """
+    # Verify the seller exists
+    seller = db.query(Seller).filter(Seller.seller_id == seller_id).first()
+    if seller is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Seller not found",
+        )
+
+    # Verify the authenticated user owns this seller
+    if str(seller.seller_id) != current_user.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Store does not belong to the authenticated seller",
+        )
+
+    # Check if slug already exists
+    existing_store = (
+        db.query(Store).filter(Store.slug == request.slug).first()
+    )
+    if existing_store:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Store slug already exists",
+        )
+
+    # Create store
+    store = Store(
+        seller_id=seller_id,
+        name=request.name,
+        description=request.description,
+        slug=request.slug,
+        logo_url=request.logo_url,
+        cover_image_url=request.cover_image_url,
+        is_active=True,
+    )
+
+    try:
+        db.add(store)
+        db.commit()
+        db.refresh(store)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Store slug already exists",
+        )
+
+    return StoreResponse(
+        store_id=str(store.store_id),
+        seller_id=str(store.seller_id),
+        name=store.name,
+        description=store.description,
+        slug=store.slug,
+        logo_url=store.logo_url,
+        cover_image_url=store.cover_image_url,
+        is_active=store.is_active,
+        created_at=store.created_at,
+        updated_at=store.updated_at,
+    )
