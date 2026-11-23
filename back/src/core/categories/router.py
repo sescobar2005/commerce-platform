@@ -37,20 +37,37 @@ router = APIRouter(prefix="/categories", tags=["categories"])
 def create_category(
     request: CategoryCreateRequest,
     db: Session = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ) -> CategoryResponse:
     """Create a new product category.
 
     Args:
         request: Category creation request.
         db: Database session dependency.
+        current_user: Authenticated user from JWT token.
 
     Returns:
         CategoryResponse: The created category.
 
     Raises:
+        HTTPException: 401 if not authenticated.
+        HTTPException: 403 if user is not an administrator.
         HTTPException: 409 if category name or slug already exists.
         HTTPException: 500 if database error occurs.
     """
+    # Require administrator privileges
+    if current_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing or invalid authorization header",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrator privileges required",
+        )
+
     # Check for duplicate name
     existing_name = (
         db.query(Category).filter(Category.name == request.name).first()
@@ -274,6 +291,7 @@ def update_category(
     category_id: str,
     request: CategoryUpdateRequest,
     db: Session = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ) -> CategoryResponse:
     """Update an existing category by its unique identifier.
 
@@ -285,15 +303,31 @@ def update_category(
         category_id: The unique category identifier.
         request: Category update request (partial fields allowed).
         db: Database session dependency.
+        current_user: Authenticated user from JWT token.
 
     Returns:
         CategoryResponse: The updated category.
 
     Raises:
+        HTTPException: 401 if not authenticated.
+        HTTPException: 403 if user is not an administrator.
         HTTPException: 404 if the category does not exist.
         HTTPException: 409 if the new name or slug already exists.
         HTTPException: 500 if database error occurs.
     """
+    # Require administrator privileges
+    if current_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing or invalid authorization header",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrator privileges required",
+        )
+
     # Retrieve the category by ID
     category = (
         db.query(Category)
@@ -408,6 +442,7 @@ def update_category(
 def delete_category(
     category_id: str,
     db: Session = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ) -> dict:
     """Soft-delete a category by setting is_active to False.
 
@@ -417,14 +452,30 @@ def delete_category(
     Args:
         category_id: The unique category identifier.
         db: Database session dependency.
+        current_user: Authenticated user from JWT token.
 
     Returns:
         dict: A status message confirming the category was deactivated.
 
     Raises:
+        HTTPException: 401 if not authenticated.
+        HTTPException: 403 if user is not an administrator.
         HTTPException: 404 if the category does not exist.
         HTTPException: 500 if database error occurs.
     """
+    # Require administrator privileges
+    if current_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing or invalid authorization header",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrator privileges required",
+        )
+
     # Retrieve the category by ID
     category = (
         db.query(Category)

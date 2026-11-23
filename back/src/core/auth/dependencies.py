@@ -31,8 +31,8 @@ def get_jwt_service() -> JWTService:
 
 def get_current_user(
     credentials: HTTPAuthorizationCredentials | None,
-    db: Session,
-    jwt_service: JWTService,
+    db: Session = Depends(get_db),
+    jwt_service: JWTService = Depends(get_jwt_service),
 ) -> UserResponse:
     """Validate a Bearer access token and return the authenticated user.
 
@@ -90,6 +90,7 @@ def get_current_user(
         email=user.email,
         is_seller=user.is_seller,
         is_verified=user.is_verified,
+        is_admin=user.is_admin,
         created_at=user.created_at,
     )
 

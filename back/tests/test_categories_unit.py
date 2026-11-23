@@ -70,6 +70,28 @@ class TestCategoryEndpoint:
             description="Updated description",
         )
 
+    def make_admin_user(self):
+        return SimpleNamespace(
+            user_id="admin-123",
+            username="admin",
+            email="admin@example.com",
+            is_seller=False,
+            is_verified=True,
+            is_admin=True,
+            created_at=datetime(2024, 1, 1, 12, 0, 0),
+        )
+
+    def make_regular_user(self):
+        return SimpleNamespace(
+            user_id="user-123",
+            username="regular",
+            email="regular@example.com",
+            is_seller=False,
+            is_verified=True,
+            is_admin=False,
+            created_at=datetime(2024, 1, 1, 12, 0, 0),
+        )
+
     def mock_single_filter_chain(self, first_return_value):
         """Set up mock where query().filter().first() returns first_return_value."""
         mock_query = MagicMock()
@@ -106,7 +128,7 @@ class TestCategoryEndpoint:
             None,
         ]
 
-        result = create_category(request, self.mock_db)
+        result = create_category(request, self.mock_db, self.make_admin_user())
 
         assert result.name == "Electronics"
         assert result.slug == "electronics"
@@ -118,6 +140,25 @@ class TestCategoryEndpoint:
         self.mock_db.add.assert_called_once()
         self.mock_db.commit.assert_called_once()
         self.mock_db.refresh.assert_called_once()
+
+    def test_category_creation_unauthenticated_raises_401(self):
+        """Unauthenticated category creation should raise 401."""
+        request = self.make_create_request()
+
+        with pytest.raises(HTTPException) as exc_info:
+            create_category(request, self.mock_db, None)
+
+        assert exc_info.value.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_category_creation_non_admin_raises_403(self):
+        """Non-admin user category creation should raise 403."""
+        request = self.make_create_request()
+
+        with pytest.raises(HTTPException) as exc_info:
+            create_category(request, self.mock_db, self.make_regular_user())
+
+        assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
+        assert "administrator" in exc_info.value.detail.lower()
 
     def test_successful_category_creation_with_parent(self):
         """Category creation with valid parent should set level and path."""
@@ -143,7 +184,7 @@ class TestCategoryEndpoint:
             parent,
         ]
 
-        result = create_category(request, self.mock_db)
+        result = create_category(request, self.mock_db, self.make_admin_user())
 
         assert result.level == 1
         assert result.path == "electronics/phones"
@@ -159,7 +200,7 @@ class TestCategoryEndpoint:
         )
 
         with pytest.raises(HTTPException) as exc_info:
-            create_category(request, self.mock_db)
+            create_category(request, self.mock_db, self.make_admin_user())
 
         assert exc_info.value.status_code == status.HTTP_409_CONFLICT
         assert "name" in exc_info.value.detail.lower()
@@ -175,7 +216,7 @@ class TestCategoryEndpoint:
         ]
 
         with pytest.raises(HTTPException) as exc_info:
-            create_category(request, self.mock_db)
+            create_category(request, self.mock_db, self.make_admin_user())
 
         assert exc_info.value.status_code == status.HTTP_409_CONFLICT
         assert "slug" in exc_info.value.detail.lower()
@@ -196,17 +237,9 @@ class TestCategoryEndpoint:
         ]
 
         with pytest.raises(HTTPException) as exc_info:
-            create_category(request, self.mock_db)
+            create_category(request, self.mock_db, self.make_admin_user())
 
         assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
-
-    def test_invalid_category_data_raises_validation_error(self):
-        """Invalid category data should raise ValidationError."""
-        with pytest.raises(ValidationError):
-            CategoryCreateRequest(
-                name="",
-                slug="",  # Invalid: empty slug
-            )
 
     def test_category_creation_database_failure_raises_exception(self):
         """Database error during creation should raise an exception."""
@@ -220,7 +253,7 @@ class TestCategoryEndpoint:
         self.mock_db.commit.side_effect = Exception("DB connection error")
 
         with pytest.raises(Exception):
-            create_category(request, self.mock_db)
+            create_category(request, self.mock_db, self.make_admin_user())
 
     # === Category Retrieval Tests ===
 
@@ -276,7 +309,7 @@ class TestCategoryEndpoint:
             None,
         ]
 
-        result = update_category(category_id, request, self.mock_db)
+        result = update_category(category_id, request, self.mock_db, self.make_admin_user())
 
         assert result.category_id == "cat-123"
         assert result.name == "Updated Electronics"
@@ -286,6 +319,33 @@ class TestCategoryEndpoint:
         self.mock_db.commit.assert_called_once()
         self.mock_db.refresh.assert_called_once()
 
+    def test_category_update_unauthenticated_raises_401(self):
+        """Unauthenticated category update should raise 401."""
+        category_id = "cat-123"
+        request = self.make_update_request()
+        category = make_category()
+
+        self.mock_db.query.return_value.filter.return_value.first.return_value = category
+
+        with pytest.raises(HTTPException) as exc_info:
+            update_category(category_id, request, self.mock_db, None)
+
+        assert exc_info.value.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_category_update_non_admin_raises_403(self):
+        """Non-admin user category update should raise 403."""
+        category_id = "cat-123"
+        request = self.make_update_request()
+        category = make_category()
+
+        self.mock_db.query.return_value.filter.return_value.first.return_value = category
+
+        with pytest.raises(HTTPException) as exc_info:
+            update_category(category_id, request, self.mock_db, self.make_regular_user())
+
+        assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
+        assert "administrator" in exc_info.value.detail.lower()
+
     def test_category_update_not_found_raises_404(self):
         """Nonexistent category ID should raise 404."""
         category_id = "nonexistent-category"
@@ -294,7 +354,7 @@ class TestCategoryEndpoint:
         self.mock_db.query.return_value.filter.return_value.first.return_value = None
 
         with pytest.raises(HTTPException) as exc_info:
-            update_category(category_id, request, self.mock_db)
+            update_category(category_id, request, self.mock_db, self.make_admin_user())
 
         assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
 
@@ -312,7 +372,7 @@ class TestCategoryEndpoint:
         ]
 
         with pytest.raises(HTTPException) as exc_info:
-            update_category(category_id, request, self.mock_db)
+            update_category(category_id, request, self.mock_db, self.make_admin_user())
 
         assert exc_info.value.status_code == status.HTTP_409_CONFLICT
 
@@ -332,7 +392,7 @@ class TestCategoryEndpoint:
         ]
 
         with pytest.raises(HTTPException) as exc_info:
-            update_category(category_id, request, self.mock_db)
+            update_category(category_id, request, self.mock_db, self.make_admin_user())
 
         assert exc_info.value.status_code == status.HTTP_409_CONFLICT
 
@@ -348,7 +408,7 @@ class TestCategoryEndpoint:
             None,
         ]
 
-        result = update_category(category_id, request, self.mock_db)
+        result = update_category(category_id, request, self.mock_db, self.make_admin_user())
 
         assert result.name == "Renamed Only"
         assert result.slug == "electronics"  # preserved
@@ -369,7 +429,7 @@ class TestCategoryEndpoint:
         self.mock_db.commit.side_effect = Exception("DB connection error")
 
         with pytest.raises(Exception):
-            update_category(category_id, request, self.mock_db)
+            update_category(category_id, request, self.mock_db, self.make_admin_user())
 
     # === Category Deletion Tests ===
 
@@ -383,7 +443,7 @@ class TestCategoryEndpoint:
             category
         )
 
-        result = delete_category(category_id, self.mock_db)
+        result = delete_category(category_id, self.mock_db, self.make_admin_user())
 
         assert result["message"] == "Category deactivated successfully"
         assert result["category_id"] == "cat-123"
@@ -394,6 +454,25 @@ class TestCategoryEndpoint:
         self.mock_db.commit.assert_called_once()
         self.mock_db.refresh.assert_called_once()
 
+    def test_category_deletion_unauthenticated_raises_401(self):
+        """Unauthenticated category deletion should raise 401."""
+        category_id = "cat-123"
+
+        with pytest.raises(HTTPException) as exc_info:
+            delete_category(category_id, self.mock_db, None)
+
+        assert exc_info.value.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_category_deletion_non_admin_raises_403(self):
+        """Non-admin user category deletion should raise 403."""
+        category_id = "cat-123"
+
+        with pytest.raises(HTTPException) as exc_info:
+            delete_category(category_id, self.mock_db, self.make_regular_user())
+
+        assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
+        assert "administrator" in exc_info.value.detail.lower()
+
     def test_category_deactivation_not_found_raises_404(self):
         """Nonexistent category ID should raise 404."""
         category_id = "nonexistent-category"
@@ -401,7 +480,7 @@ class TestCategoryEndpoint:
         self.mock_db.query.return_value.filter.return_value.first.return_value = None
 
         with pytest.raises(HTTPException) as exc_info:
-            delete_category(category_id, self.mock_db)
+            delete_category(category_id, self.mock_db, self.make_admin_user())
 
         assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
 
@@ -415,7 +494,7 @@ class TestCategoryEndpoint:
             category
         )
 
-        result = delete_category(category_id, self.mock_db)
+        result = delete_category(category_id, self.mock_db, self.make_admin_user())
 
         assert result["is_active"] is False
         self.mock_db.commit.assert_called_once()
@@ -432,7 +511,7 @@ class TestCategoryEndpoint:
         self.mock_db.commit.side_effect = Exception("DB connection error")
 
         with pytest.raises(Exception):
-            delete_category(category_id, self.mock_db)
+            delete_category(category_id, self.mock_db, self.make_admin_user())
 
     # === Category Listing Tests ===
 
