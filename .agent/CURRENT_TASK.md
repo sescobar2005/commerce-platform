@@ -55,7 +55,17 @@ Database infrastructure (commits `79367fd`, `c6752fd`, `ba13a24`, `b586e55`, `19
 - 7f3a1e2c4d8b - Cart and CartItem Alembic migration APPLIED to plataforma_comercio_dev
 - Verified: Alembic revision is `7f3a1e2c4d8b`, carts and cart_items tables exist with all columns/constraints/indexes, all 7 original tables preserved intact
 
-All pre-existing test failures (28) are unrelated SQLAlchemy model default / Alembic / session issues.
+### Test reorganization (commits `3b0a669`, `3a941be`, `a4ef954`, `74a5774`, `5409d4f`, `5b45d3d`, `5c3ab0d`)
+
+| Field | Value |
+|-------|-------|
+| Convention | Each module owns its tests: `back/src/core/<module>/tests/` |
+| testpaths | Updated to `["tests", "src"]` in pyproject.toml |
+| Shared tests remaining | back/tests/ (alembic, database, models, session, integration) |
+| Module test directories | auth/tests/, security/tests/, cart/tests/, categories/tests/, products/tests/, sellers/tests/ |
+| Test count | 327 before migration → 327 after migration (no tests lost) |
+| Module test results | auth: 61/61 pass; security: 50/50 pass; cart: 64/64 pass; categories: 37/37 pass; products: 42/42 pass; sellers: 10/10 pass; shared: 290 passed overall (28 pre-existing failures unrelated to migration) |
+| Commit hashes | `3b0a669` auth; `3a941be` security; `a4ef954` cart; `74a5774` categories; `5409d4f` products; `5b45d3d` sellers; `5c3ab0d` pyproject.toml |
 
 ### Expiration analysis (2026-11-24)
 

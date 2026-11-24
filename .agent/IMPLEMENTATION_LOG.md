@@ -1297,3 +1297,88 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Decision | Do NOT implement future-date validation for expires_at |
 | Rationale | Documented requirements do not support it: (1) API_SPECIFICATION.md has no cart expiration validation rule, (2) Cart model has no check constraint on expires_at, (3) CartUpdateRequest schema allows Optional[datetime] with no future-date validation, (4) CartService.update_cart() sets expires_at without validation, (5) Existing tests pass naive past datetimes (e.g., datetime(2024, 12, 31)) expecting success. Null is explicitly allowed (test_cart_update_clear_expiration). Timezone handling is inconsistent: model uses DateTime(timezone=True) but tests/schema use naive datetimes. Per task rules: "If the requirements are unclear, do not invent a rule." No production code, test, or exception changes made. |
 
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-24 |
+| Phase | Test reorganization — modular test directory structure |
+| Completed unit | Migrated auth tests to back/src/core/auth/tests/ |
+| Files affected | `back/tests/test_auth_router_unit.py`, `back/tests/test_auth_login_unit.py`, `back/tests/test_auth_logout_unit.py`, `back/tests/test_refresh_unit.py`, `back/tests/test_auth_dependencies_unit.py`, `back/tests/test_auth_schemas_unit.py`, new `back/src/core/auth/tests/__init__.py` |
+| Tests or checks | 61 tests collected, 61 passed, 0 failed |
+| Commit hash | `3b0a669` |
+| Observations | Moved 6 auth test files from back/tests/ to back/src/core/auth/tests/. Created __init__.py. All imports preserved correctly. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-24 |
+| Phase | Test reorganization — modular test directory structure |
+| Completed unit | Migrated security tests to back/src/core/security/tests/ |
+| Files affected | `back/tests/test_jwt_unit.py`, `back/tests/test_password_unit.py`, `back/tests/test_token_revocation_unit.py`, new `back/src/core/security/tests/__init__.py` |
+| Tests or checks | 50 tests collected, 50 passed, 0 failed |
+| Commit hash | `3a941be` |
+| Observations | Moved 3 security test files from back/tests/ to back/src/core/security/tests/. Created __init__.py. All imports preserved correctly. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-24 |
+| Phase | Test reorganization — modular test directory structure |
+| Completed unit | Migrated cart tests to back/src/core/cart/tests/ |
+| Files affected | `back/tests/test_cart_unit.py`, `back/tests/test_cart_item_unit.py`, `back/tests/test_cart_models_unit.py`, `back/tests/test_cart_update_delete_unit.py`, new `back/src/core/cart/tests/__init__.py` |
+| Tests or checks | 64 tests collected, 64 passed, 0 failed |
+| Commit hash | `a4ef954` |
+| Observations | Moved 4 cart test files from back/tests/ to back/src/core/cart/tests/. Created __init__.py. All imports preserved correctly. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-24 |
+| Phase | Test reorganization — modular test directory structure |
+| Completed unit | Migrated categories tests to back/src/core/categories/tests/ |
+| Files affected | `back/tests/test_categories_unit.py`, new `back/src/core/categories/tests/__init__.py` |
+| Tests or checks | 37 tests collected, 37 passed, 0 failed |
+| Commit hash | `74a5774` |
+| Observations | Moved 1 categories test file from back/tests/ to back/src/core/categories/tests/. Created __init__.py. All imports preserved correctly. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-24 |
+| Phase | Test reorganization — modular test directory structure |
+| Completed unit | Migrated products tests to back/src/core/products/tests/ |
+| Files affected | `back/tests/test_products_unit.py`, new `back/src/core/products/tests/__init__.py` |
+| Tests or checks | 42 tests collected, 42 passed, 0 failed |
+| Commit hash | `5409d4f` |
+| Observations | Moved 1 products test file from back/tests/ to back/src/core/products/tests/. Created __init__.py. All imports preserved correctly. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-24 |
+| Phase | Test reorganization — modular test directory structure |
+| Completed unit | Migrated sellers tests to back/src/core/sellers/tests/ |
+| Files affected | `back/tests/test_auth_seller_registration_unit.py`, new `back/src/core/sellers/tests/__init__.py` |
+| Tests or checks | 10 tests collected, 10 passed, 0 failed |
+| Commit hash | `5b45d3d` |
+| Observations | Moved 1 sellers test file from back/tests/ to back/src/core/sellers/tests/. Created __init__.py. All imports preserved correctly. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-24 |
+| Phase | Test reorganization — modular test directory structure |
+| Completed unit | Updated pyproject.toml testpaths for modular discovery |
+| Files affected | `back/pyproject.toml` |
+| Tests or checks | 327 tests collected (baseline maintained), 290 passed (28 pre-existing failures unrelated to reorganization) |
+| Commit hash | `5c3ab0d` |
+| Observations | Changed `testpaths = ["tests"]` to `testpaths = ["tests", "src"]` to discover tests in both shared back/tests/ and module-level src/core/*/tests/ directories. |
+
+
