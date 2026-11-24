@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str
     JWT_PRIVATE_KEY_PATH: str
     JWT_PUBLIC_KEY_PATH: str
-    ALGORITHM: str
+    ALGORITHM: str = "RS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     REFRESH_TOKEN_EXPIRE_DAYS: int
     ARGON2_MEMORY_COST: int
