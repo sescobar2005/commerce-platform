@@ -32,14 +32,17 @@ def create_db_engine(database_url: str | None = None):
             "DATABASE_URL is not configured. Set it in environment variables "
             "or in a .env file derived from .env.example."
         )
-    return create_engine(
-        url,
-        pool_pre_ping=True,
-        pool_size=5,
-        max_overflow=10,
-        pool_timeout=30,
-        pool_recycle=1800,
-    )
+    engine_kwargs = {"pool_pre_ping": True}
+    if not url.startswith("sqlite"):
+        engine_kwargs.update(
+            {
+                "pool_size": 5,
+                "max_overflow": 10,
+                "pool_timeout": 30,
+                "pool_recycle": 1800,
+            }
+        )
+    return create_engine(url, **engine_kwargs)
 
 
 engine = create_db_engine()
