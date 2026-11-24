@@ -399,3 +399,182 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Tests or checks | 10/10 login unit tests pass; 73/73 total security/auth tests pass; Python syntax verified via `py_compile` |
 | Commit hashes | `6a52190` (login endpoint), `1edbb42` (unit tests) |
 | Observations | Implemented POST /api/v1/auth/login endpoint. Accepts UserLoginRequest (username, password). Finds user by username. Verifies password with PasswordService.verify_password() (Argon2id). Returns consistent 401 for unknown users AND incorrect passwords (no user enumeration). Generates access token using JWTService.create_access_token() with sub, username, role, iat, exp, type claims. Generates refresh token using JWTService.create_refresh_token() with sub, iat, exp, type claims. Returns UserLoginResponse (access_token, refresh_token, token_type, user). Updates last_login_at on successful login. Persists via SQLAlchemy session with commit. Handles IntegrityError with rollback and 500 INTERNAL_SERVER_ERROR. 10 unit tests covering successful login, incorrect password, unknown username, password verification called once, last_login_at update, db failure rollback, input validation (empty username/password, too long username/password). No logout endpoint, no token revocation, no token rotation. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-23 |
+| Phase | Phase 1 (Fundamentals) — Test infrastructure |
+| Completed unit | Pytest Python import path configured via `pythonpath` in `pyproject.toml` |
+| Files affected | `back/pyproject.toml` |
+| Tests or checks | Test collection succeeds for `tests/test_auth_seller_registration_unit.py` (10 tests collected); no manual `sys.path` required |
+| Commit hash | `14470c9` |
+| Observations | Added `pythonpath = ["."]` under `[tool.pytest.ini_options]` so pytest automatically imports `src` as a top-level package. Resolves `from src.core...` absolute import failures. `pytest-cov` is NOT installed in the venv and NOT declared as a dev dependency — `--cov=src` in `addopts` requires it; use `-o addopts=` at runtime until installed. No source code, tests, or `.env` modified. 
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-23 |
+| Phase | Phase 1 (Fundamentals) — Seller module |
+| Completed unit | Fixed missing Store model import in sellers router |
+| Files affected | `back/src/core/sellers/router.py` |
+| Tests or checks | All 10 seller registration unit tests pass (10 passed, 0 failed) |
+| Commit hash | `5b86ca2` |
+| Observations | Added `from src.core.models.store import Store` to `back/src/core/sellers/router.py`. The Store model was used at lines 149 and 158+ in create_store() but never imported, causing NameError at runtime. No endpoint logic modified. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-23 |
+| Phase | Phase 1 (Fundamentals) — Refresh token endpoint |
+| Completed unit | Refresh token rotation for POST /api/v1/auth/refresh |
+| Files affected | `back/src/core/auth/router.py`, `back/tests/test_refresh_unit.py` |
+| Tests or checks | All 9 refresh unit tests pass; 72/72 total auth tests pass |
+| Commit hash | `25afd42` |
+| Observations | Implemented refresh token rotation: (1) validates jti/sub claims, rejects missing jti with 401, (2) revokes old refresh token via TokenRevocationService before issuing new tokens, (3) generates new access token and new refresh token, (4) handles IntegrityError with rollback and 500, (5) returns TokenResponse with both new tokens. Added test for previous token revocation after rotation verifying added_obj.jti matches old token. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-23 |
+| Phase | Phase 1 (Fundamentals) — Product module |
+| Completed unit | Product creation endpoint `POST /api/v1/products` |
+| Files affected | `back/src/core/products/schemas.py`, `back/src/core/products/router.py`, `back/src/core/products/__init__.py`, `back/tests/test_products_unit.py` |
+| Tests or checks | All 8 product unit tests pass; 155/183 total tests pass (28 pre-existing failures unrelated to product module) |
+| Commit hash | `473585d` |
+| Observations | Implemented POST /api/v1/products: (1) requires authentication via CurrentUser dependency, (2) validates seller profile exists (403 if missing), (3) validates store exists (404 if missing), (4) validates store ownership by authenticated seller (403 if not owner), (5) validates category exists (404 if missing), (6) Pydantic validation of required fields (name, price, SKU, store_id, category_id), (7) persists via SQLAlchemy session with IntegrityError → 409, (8) returns ProductResponse. Tests cover: successful creation, no seller profile 403, store not found 404, store owned by another seller 403, category not found 404, invalid input ValidationError, duplicate SKU 409, database failure. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-23 |
+| Phase | Phase 1 (Fundamentals) — Product module |
+| Completed unit | Product retrieval endpoint `GET /api/v1/products/{product_id}` |
+| Files affected | `back/src/core/products/router.py`, `back/tests/test_products_unit.py` |
+| Tests or checks | All 11 product unit tests pass (8 existing + 3 new); 72/72 auth tests pass; 155/183 total tests pass (28 pre-existing failures unrelated) |
+| Commit hash | `4e70d90` |
+| Observations | Implemented GET /api/v1/products/{product_id}: (1) retrieves product by ID via SQLAlchemy query, (2) returns 404 if product not found, (3) returns full ProductResponse, (4) public endpoint (no authentication required per API_SPECIFICATION.md), (5) product_id path parameter is a string matching the model's String(36) UUID format. Tests cover: successful retrieval, product not found 404, database query failure. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-23 |
+| Phase | Phase 1 (Fundamentals) — Product module |
+| Completed unit | Product update endpoint `PUT /api/v1/products/{product_id}` |
+| Files affected | `back/src/core/products/router.py`, `back/src/core/products/schemas.py`, `back/tests/test_products_unit.py` |
+| Tests or checks | All 19 product unit tests pass (11 existing + 8 new); 72/72 auth tests pass; 155/183 total tests pass (28 pre-existing failures unrelated) |
+| Commit hash | `3a93791` |
+| Observations | Implemented PUT /api/v1/products/{product_id}: (1) requires authentication via CurrentUser, (2) validates seller profile exists (403 if missing), (3) retrieves product by ID (404 if not found), (4) validates store ownership via store lookup (403 if not owner), (5) prevents changing store_id/category_id via update (403), (6) ProductUpdateRequest with all optional fields for partial updates, (7) model_dump(exclude_unset=True) preserves omitted fields, (8) IntegrityError → 409 with rollback, (9) returns ProductResponse. Tests cover: successful update, product not found 404, no seller profile 403, not owner 403, preserves omitted fields, duplicate SKU 409, invalid price validation, database failure. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-23 |
+| Phase | Phase 1 (Fundamentals) — Product module |
+| Completed unit | Product deletion endpoint `DELETE /api/v1/products/{product_id}` |
+| Files affected | `back/src/core/products/router.py`, `back/tests/test_products_unit.py` |
+| Tests or checks | All 25 product unit tests pass (19 existing + 6 new); 72/72 auth tests pass; 155/183 total tests pass (28 pre-existing failures unrelated) |
+| Commit hash | `e3f2273` |
+| Observations | Implemented DELETE /api/v1/products/{product_id}: (1) requires authentication via CurrentUser dependency, (2) validates seller profile exists (403 if missing), (3) retrieves product by ID (404 if not found), (4) validates store ownership via store lookup (403 if not owner), (5) soft-deletes by setting is_active=False (preserves record for referential integrity), (6) IntegrityError → 409 with rollback, (7) returns dict with message, product_id, is_active. Tests cover: successful deactivation, product not found 404, no seller profile 403, not owner 403, already inactive still deactivates, database failure. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-23 |
+| Phase | Phase 1 (Fundamentals) — Product module |
+| Completed unit | Product listing endpoint `GET /api/v1/products/` |
+| Files affected | `back/src/core/products/router.py`, `back/src/core/products/schemas.py`, `back/tests/test_products_unit.py` |
+| Tests or checks | All 42 product unit tests pass (25 existing + 17 new); 72/72 auth tests pass; 155/183 total tests pass (28 pre-existing failures unrelated) |
+| Commit hash | `6dc8a3a` |
+| Observations | Implemented GET /api/v1/products/: (1) public endpoint (no auth required), (2) search by name (case-insensitive), (3) filters: category_id, store_id, min_price, max_price, is_active (defaults to True), (4) sorting: price_asc, price_desc, newest, oldest (allowlist), (5) pagination: page (default 1), page_size (default 20, max 100), (6) returns ProductListResponse with items, total, page, page_size, total_pages, (7) joinedload for store/category to avoid N+1, (8) validation: min_price/max_price >= 0, min_price <= max_price, page >= 1, page_size 1-100, sort in allowlist. Tests cover: default listing, inactive excluded by default, search, category filter, store filter, price range, combined filters, invalid price range 400, invalid sort 400, each sort option, pagination, page_size max, empty results, database error. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-23 |
+| Phase | Phase 1 (Fundamentals) — Category module |
+| Completed unit | Category CRUD and listing endpoints |
+| Files affected | `back/src/core/categories/__init__.py`, `back/src/core/categories/schemas.py`, `back/src/core/categories/router.py`, `back/tests/test_categories_unit.py` |
+| Tests or checks | All 32 category unit tests pass; 124/124 total regression tests pass (no regressions); 28 pre-existing full-suite failures remain unresolved |
+| Commit hash | `b7f0f02` |
+| Observations | Implemented all 6 category endpoints: (1) POST /api/v1/categories/ — create category with duplicate name/slug check (409), (2) GET /api/v1/categories/{category_id} — retrieve category (404 if not found), (3) PUT /api/v1/categories/{category_id} — update category with partial fields, duplicate name/slug check (409), prevents self-referencing parent, (4) DELETE /api/v1/categories/{category_id} — soft-delete by setting is_active=False (preserves referential integrity with products), (5) GET /api/v1/categories/ — list categories with pagination, search by name, is_active filter (defaults to True), (6) GET /api/v1/categories/{category_id}/products — list products in a category. All endpoints are public (no authentication required per API_SPECIFICATION.md). Category deletion uses soft-deletion (is_active=False) consistent with product deletion pattern, avoiding cascade-delete of products via ondelete=CASCADE FK. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-23 |
+| Phase | Phase 1 (Fundamentals) — Category module security |
+| Completed unit | Admin authorization for category write endpoints |
+| Files affected | `back/src/core/security/schemas.py`, `back/src/core/auth/dependencies.py`, `back/src/core/categories/router.py`, `back/tests/test_categories_unit.py` |
+| Tests or checks | All 37 category unit tests pass; 161/161 total regression tests pass (no regressions) |
+| Commit hash | `c8e3762` |
+| Observations | Security fix: category write endpoints now require administrator privileges. (1) Added `is_admin: bool = False` to UserResponse schema in security/schemas.py, (2) Updated get_current_user() in auth/dependencies.py to populate is_admin from User model, (3) Added current_user dependency and is_admin check to POST/PUT/DELETE category endpoints — unauthenticated → 401, non-admin → 403, admin → success. GET endpoints remain public. Added 6 authorization tests (create/update/delete × unauthenticated/non-admin). |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-23 |
+| Phase | Phase 1 (Fundamentals) — Auth schema separation |
+| Completed unit | Separate public UserResponse from internal CurrentUser schema |
+| Files affected | `back/src/core/security/schemas.py`, `back/src/core/auth/dependencies.py`, `back/src/core/categories/router.py`, `back/src/core/products/router.py`, `back/src/core/sellers/router.py`, `back/tests/test_categories_unit.py` |
+| Tests or checks | All 150 regression tests pass (category, product, auth, seller); `is_admin` NOT serialized in login response |
+| Commit hash | `0ac4f11` |
+| Observations | Security fix: separated public UserResponse schema from internal CurrentUser authorization object. (1) Removed `is_admin` from UserResponse to prevent leaking admin status in login response, (2) Created CurrentUser(UserResponse) schema with is_admin field for internal authorization, (3) Updated get_current_user() to return CurrentUser with is_admin from User model, (4) Updated category, product, seller routers to use CurrentUser as dependency parameter type, (5) Login endpoint continues to return UserResponse (no is_admin exposure). Existing category authorization tests (admin/unauthenticated/non-admin) continue to pass. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-23 |
+| Phase | Phase 1 (Fundamentals) — Cart module |
+| Completed unit | Cart and CartItem database models |
+| Files affected | `back/src/core/models/cart.py`, `back/src/core/models/__init__.py`, `back/alembic/env.py`, `back/tests/test_cart_models_unit.py` |
+| Tests or checks | All 20 cart model unit tests pass; 181/181 total regression tests pass (no regressions) |
+| Commit hash | `e9efb6d` |
+| Observations | Implemented Cart and CartItem SQLAlchemy 2.0 models following existing conventions. Cart: cart_id (PK UUID), user_id (FK → users, CASCADE), created_at, last_updated_at, expires_at. CartItem: cart_item_id (PK UUID), cart_id (FK → carts, CASCADE), product_id (FK → products, RESTRICT), quantity (check constraint > 0), price_at_time (Numeric 10,2), created_at. UniqueConstraint on (cart_id, product_id) prevents duplicate items. Relationships: Cart.user → User, Cart.items → CartItem (cascade delete-orphan), CartItem.cart → Cart, CartItem.product → Product. Models exported via models/__init__.py and registered in alembic/env.py. No migration created (not authorized per AGENTS.md). |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-23 |
+| Phase | Phase 1 (Fundamentals) — Cart module endpoints |
+| Completed unit | Cart creation (`POST /api/v1/carts/`) and retrieval (`GET /api/v1/carts/{cart_id}`) endpoints |
+| Files affected | `back/src/core/cart/__init__.py`, `back/src/core/cart/schemas.py`, `back/src/core/cart/router.py`, `back/tests/test_cart_unit.py` |
+| Tests or checks | All 11 cart endpoint unit tests pass; 192/192 total regression tests pass (no regressions) |
+| Commit hash | `37ea458` |
+| Observations | Implemented POST /api/v1/carts/ and GET /api/v1/carts/{cart_id}: (1) Both require authentication via CurrentUser dependency, (2) POST returns existing cart if user already has one (idempotent), otherwise creates new, (3) GET returns 404 for nonexistent cart AND for cart owned by another user (information disclosure prevention), (4) GET uses joinedload for items+products to avoid N+1, (5) IntegrityError → 500 with rollback, (6) CartResponse includes items with CartItemResponse detail, (7) No DB-level unique constraint on user_id for active carts — concurrent POST could create duplicates (documented limitation), (8) 11 unit tests: successful creation, existing cart returned, unauthenticated 401, owner retrieval 200, another user 404, nonexistent 404, serialization with items, empty items, expires_at None, database error rollback. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-23 |
+| Phase | Phase 1 (Fundamentals) — Cart module endpoints |
+| Completed unit | Cart item add, update, and remove endpoints |
+| Files affected | `back/src/core/cart/schemas.py`, `back/src/core/cart/router.py`, `back/tests/test_cart_item_unit.py` |
+| Tests or checks | All 21 cart item unit tests pass; 213/213 total regression tests pass (no regressions) |
+| Commit hash | `d16c02d` |
+| Observations | Implemented POST /api/v1/carts/{cart_id}/items, PUT /api/v1/carts/{cart_id}/items/{item_id}, DELETE /api/v1/carts/{cart_id}/items/{item_id}: (1) All require authentication via CurrentUser dependency, (2) Cart ownership verified (404 if not owner, information disclosure prevention), (3) Product existence and active status verified (404 if not found/inactive), (4) Price snapshotted from database (not trusted from client), (5) Quantity validated as positive integer, (6) Duplicate product in cart → quantity incremented, (7) Stock availability checked (409 if insufficient), (8) IntegrityError → 409 with rollback, (9) CartResponse includes updated items, (10) 21 unit tests: successful add, product not found, inactive product, insufficient stock, invalid quantity, quantity increment, price snapshot, cart not found, not owner, database error, successful update, item not found, not owner, price preserved, successful removal, unauthorized, database rollback. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-23 |
+| Phase | Phase 1 (Fundamentals) — Cart module endpoints |
+| Completed unit | Cart update and delete endpoints |
+| Files affected | `back/src/core/cart/schemas.py`, `back/src/core/cart/router.py`, `back/tests/test_cart_update_delete_unit.py` |
+| Tests or checks | All 12 cart update/delete unit tests pass; 225/225 total regression tests pass (no regressions) |
+| Commit hash | `b64329a` |
+| Observations | Implemented PUT /api/v1/carts/{cart_id} and DELETE /api/v1/carts/{cart_id}: (1) PUT requires authentication, validates cart ownership (404 if not owner), updates expires_at only (ownership, created_at, last_updated_at not editable), returns CartResponse, (2) DELETE requires authentication, validates cart ownership (404 if not owner), deletes cart with cascade to items (delete-orphan), returns dict with message and cart_id, (3) Both handle IntegrityError → 409 with rollback, (4) Both return 401 if unauthenticated, 404 if cart not found or not owned, (5) CartUpdateRequest schema has optional expires_at field only, (6) 12 unit tests: successful update, clear expiration, cart not found, not owner, unauthenticated, database error, preserves items, successful delete, delete not found, delete not owner, delete unauthenticated, database error rollback. |
