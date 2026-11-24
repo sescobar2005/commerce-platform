@@ -55,7 +55,8 @@ venv.bak/
 *.asc
 
 # Alembic
-alembic/versions/
+alembic/versions/*
+!alembic/versions/*.py
 
 # Testing
 .pytest_cache/
