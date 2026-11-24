@@ -1,13 +1,48 @@
 """Cart request/response schemas for Plataforma de Comercio.
 
 Provides Pydantic schemas for cart creation, cart item responses,
-and cart profile responses.
+cart item add/update requests, and cart profile responses.
 """
 
 from datetime import datetime
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
+
+
+class CartItemAddRequest(BaseModel):
+    """Request schema for adding an item to a cart.
+
+    Requires a product ID and positive integer quantity.
+    Price is not accepted from the client; it is snapshotted
+    from the product record in the database.
+    """
+
+    product_id: str = Field(
+        ...,
+        min_length=1,
+        max_length=36,
+        description="Product identifier to add to the cart",
+    )
+    quantity: int = Field(
+        ...,
+        gt=0,
+        description="Positive integer quantity of the product",
+    )
+
+
+class CartItemUpdateRequest(BaseModel):
+    """Request schema for updating a cart item quantity.
+
+    Only the quantity can be updated. Price snapshots are preserved
+    unless the architecture explicitly requires refreshing them.
+    """
+
+    quantity: int = Field(
+        ...,
+        gt=0,
+        description="Positive integer quantity of the product",
+    )
 
 
 class CartItemResponse(BaseModel):
