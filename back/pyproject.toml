@@ -42,7 +42,7 @@ profile = "black"
 line_length = 100
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "src"]
 asyncio_mode = "auto"
 pythonpath = ["."]
 addopts = "-v --cov=src --cov-report=term-missing"
