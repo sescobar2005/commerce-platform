@@ -285,13 +285,13 @@ class CartService:
             )
 
         item.quantity = quantity
-        self.db.add(item)
+        self.item_repo.add(item)
         try:
-            self.db.commit()
+            self.item_repo.commit()
         except IntegrityError:
-            self.db.rollback()
+            self.item_repo.rollback()
             raise CartError("Failed to update item")
-        self.db.refresh(item)
+        self.item_repo.refresh(item)
         return item
 
     def remove_item(
@@ -327,10 +327,10 @@ class CartService:
         if item is None:
             raise CartItemNotFoundError(item_id)
 
-        self.db.delete(item)
+        self.item_repo.delete(item)
         try:
-            self.db.commit()
+            self.item_repo.commit()
         except IntegrityError:
-            self.db.rollback()
+            self.item_repo.rollback()
             raise CartError("Failed to remove item from cart")
         return item
