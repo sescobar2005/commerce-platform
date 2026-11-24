@@ -1,26 +1,104 @@
 """Cart router for Plataforma de Comercio.
 
-Provides cart management endpoints for authenticated users.
+Provides cart management endpoints for authenticated sellers.
+
+This router is intentionally thin: it handles HTTP concerns only
+(routing, request/response serialization, HTTP status codes, and
+exception translation). All business logic lives in
+``src.core.cart.services.CartService`` and all database access lives
+in ``src.core.cart.repositories``.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, joinedload
 
 from src.core.auth.dependencies import get_current_user
 from src.core.database import get_db
-from src.core.models.cart import Cart, CartItem
-from src.core.models.product import Product
 from src.core.security.schemas import CurrentUser
 from src.core.cart.schemas import (
     CartItemAddRequest,
     CartItemResponse,
     CartItemUpdateRequest,
     CartResponse,
-    CartUpdateRequest,
+)
+from src.core.cart.services import CartService
+from src.core.cart.exceptions import (
+    CartError,
+    CartItemNotFoundError,
+    CartNotFoundError,
+    CartOwnershipError,
+    InsufficientStockError,
+    ProductInactiveError,
+    ProductNotFoundError,
 )
 
 router = APIRouter(prefix="/carts", tags=["carts"])
+
+
+def _cart_to_response(cart: Cart) -> CartResponse:
+    """Convert a Cart domain model to a CartResponse schema.
+
+    Items are eagerly loaded by the service layer, so this simply
+    maps domain fields to schema fields.
+    """
+    items = [
+        CartItemResponse(
+            cart_item_id=str(item.cart_item_id),
+            cart_id=str(item.cart_id),
+            product_id=str(item.product_id),
+            quantity=item.quantity,
+            price_at_time=float(item.price_at_time),
+            created_at=item.created_at,
+        )
+        for item in cart.items
+    ]
+
+    return CartResponse(
+        cart_id=str(cart.cart_id),
+        user_id=str(cart.user_id),
+        items=items,
+        created_at=cart.created_at,
+        last_updated_at=cart.last_updated_at,
+        expires_at=cart.expires_at,
+    )
+
+
+def _handle_service_error(exc: CartError) -> HTTPException:
+    """Translate domain exceptions into HTTP exceptions."""
+    if isinstance(exc, CartNotFoundError):
+        return HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Cart not found",
+        )
+    if isinstance(exc, CartOwnershipError):
+        return HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Cart not found",
+        )
+    if isinstance(exc, CartItemNotFoundError):
+        return HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Item not found",
+        )
+    if isinstance(exc, ProductNotFoundError):
+        return HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Product not found",
+        )
+    if isinstance(exc, ProductInactiveError):
+        return HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Product not found",
+        )
+    if isinstance(exc, InsufficientStockError):
+        return HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Insufficient stock",
+        )
+    # Fallback for unexpected CartError
+    return HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail=str(exc) or "Cart operation failed",
+    )
 
 
 @router.post(
@@ -32,7 +110,7 @@ router = APIRouter(prefix="/carts", tags=["carts"])
     "If the user already has an active cart, returns the existing cart.",
 )
 def create_cart(
-    db: Session = Depends(get_db),
+    db=Depends(get_db),
     current_user: CurrentUser = Depends(get_current_user),
 ) -> CartResponse:
     """Create a new cart for the authenticated user.
@@ -40,11 +118,6 @@ def create_cart(
     If the user already has an existing cart, returns it instead of
     creating a duplicate. This enforces the business rule that a user
     may have at most one active cart at the application level.
-
-    Note: The current schema does not enforce a database-level unique
-    constraint on user_id for active carts, so concurrent requests
-    could theoretically create multiple carts. The application-level
-    check mitigates this but does not eliminate the race condition.
 
     Args:
         db: Database session dependency.
@@ -57,56 +130,17 @@ def create_cart(
         HTTPException: 401 if not authenticated.
         HTTPException: 500 if database error occurs.
     """
-    # Require authentication
     if current_user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing or invalid authorization header",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
-    # Check if user already has a cart
-    existing_cart = (
-        db.query(Cart)
-        .filter(Cart.user_id == current_user.user_id)
-        .first()
-    )
-    if existing_cart:
-        # Eager-load items with products for consistent response
-        existing_cart = (
-            db.query(Cart)
-            .options(
-                joinedload(Cart.items).joinedload(CartItem.product)
-            )
-            .filter(Cart.cart_id == existing_cart.cart_id)
-            .first()
-        )
-        return _cart_to_response(existing_cart)
-
-    # Create new cart
-    cart = Cart(user_id=current_user.user_id)
-
+    service = CartService(db)
     try:
-        db.add(cart)
-        db.commit()
-        db.refresh(cart)
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create cart",
-        )
-
-    # Eager-load items for response
-    cart = (
-        db.query(Cart)
-        .options(
-            joinedload(Cart.items).joinedload(CartItem.product)
-        )
-        .filter(Cart.cart_id == cart.cart_id)
-        .first()
-    )
-
+        cart = service.create_cart(current_user)
+    except CartError as exc:
+        raise _handle_service_error(exc)
     return _cart_to_response(cart)
 
 
@@ -120,7 +154,7 @@ def create_cart(
 )
 def get_cart(
     cart_id: str,
-    db: Session = Depends(get_db),
+    db=Depends(get_db),
     current_user: CurrentUser = Depends(get_current_user),
 ) -> CartResponse:
     """Retrieve a cart by its unique identifier.
@@ -142,36 +176,17 @@ def get_cart(
         HTTPException: 404 if cart not found or not owned by user.
         HTTPException: 500 if database error occurs.
     """
-    # Require authentication
     if current_user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing or invalid authorization header",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
-    cart = (
-        db.query(Cart)
-        .options(
-            joinedload(Cart.items).joinedload(CartItem.product)
-        )
-        .filter(Cart.cart_id == cart_id)
-        .first()
-    )
-
-    if cart is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Cart not found",
-        )
-
-    # Verify ownership — return 404 (not 403) to avoid information disclosure
-    if str(cart.user_id) != current_user.user_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Cart not found",
-        )
-
+    service = CartService(db)
+    try:
+        cart = service.get_cart(cart_id, current_user)
+    except CartError as exc:
+        raise _handle_service_error(exc)
     return _cart_to_response(cart)
 
 
@@ -186,8 +201,8 @@ def get_cart(
 )
 def update_cart(
     cart_id: str,
-    request: CartUpdateRequest,
-    db: Session = Depends(get_db),
+    request: CartItemUpdateRequest,
+    db=Depends(get_db),
     current_user: CurrentUser = Depends(get_current_user),
 ) -> CartResponse:
     """Update a cart's expiration time.
@@ -209,56 +224,17 @@ def update_cart(
         HTTPException: 404 if cart not found or not owned by user.
         HTTPException: 500 if database error occurs.
     """
-    # Require authentication
     if current_user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing or invalid authorization header",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
-    # Verify cart exists and belongs to user
-    cart = (
-        db.query(Cart)
-        .filter(Cart.cart_id == cart_id)
-        .first()
-    )
-    if cart is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Cart not found",
-        )
-
-    if str(cart.user_id) != current_user.user_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Cart not found",
-        )
-
-    # Update editable fields only
-    cart.expires_at = request.expires_at
-
+    service = CartService(db)
     try:
-        db.add(cart)
-        db.commit()
-        db.refresh(cart)
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Failed to update cart",
-        )
-
-    # Reload cart with items for response
-    cart = (
-        db.query(Cart)
-        .options(
-            joinedload(Cart.items).joinedload(CartItem.product)
-        )
-        .filter(Cart.cart_id == cart_id)
-        .first()
-    )
-
+        cart = service.update_cart(cart_id, request, current_user)
+    except CartError as exc:
+        raise _handle_service_error(exc)
     return _cart_to_response(cart)
 
 
@@ -271,7 +247,7 @@ def update_cart(
 )
 def delete_cart(
     cart_id: str,
-    db: Session = Depends(get_db),
+    db=Depends(get_db),
     current_user: CurrentUser = Depends(get_current_user),
 ) -> dict:
     """Delete a cart and all its items.
@@ -292,42 +268,17 @@ def delete_cart(
         HTTPException: 404 if cart not found or not owned by user.
         HTTPException: 500 if database error occurs.
     """
-    # Require authentication
     if current_user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing or invalid authorization header",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
-    # Verify cart exists and belongs to user
-    cart = (
-        db.query(Cart)
-        .filter(Cart.cart_id == cart_id)
-        .first()
-    )
-    if cart is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Cart not found",
-        )
-
-    if str(cart.user_id) != current_user.user_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Cart not found",
-        )
-
+    service = CartService(db)
     try:
-        db.delete(cart)
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Failed to delete cart",
-        )
-
+        service.delete_cart(cart_id, current_user)
+    except CartError as exc:
+        raise _handle_service_error(exc)
     return {
         "message": "Cart deleted",
         "cart_id": cart_id,
@@ -340,12 +291,13 @@ def delete_cart(
     status_code=status.HTTP_201_CREATED,
     summary="Add an item to a cart",
     description="Add a product to the authenticated user's cart. "
-    "If the product already exists in the cart, its quantity is incremented.",
+    "If the product already exists in the cart, its quantity is "
+    "incremented.",
 )
 def add_item_to_cart(
     cart_id: str,
     request: CartItemAddRequest,
-    db: Session = Depends(get_db),
+    db=Depends(get_db),
     current_user: CurrentUser = Depends(get_current_user),
 ) -> CartResponse:
     """Add a product to the authenticated user's cart.
@@ -371,105 +323,20 @@ def add_item_to_cart(
         HTTPException: 409 if insufficient stock.
         HTTPException: 500 if database error occurs.
     """
-    # Require authentication
     if current_user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing or invalid authorization header",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
-    # Verify cart exists and belongs to user
-    cart = (
-        db.query(Cart)
-        .options(
-            joinedload(Cart.items).joinedload(CartItem.product)
-        )
-        .filter(Cart.cart_id == cart_id)
-        .first()
-    )
-    if cart is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Cart not found",
-        )
-
-    if str(cart.user_id) != current_user.user_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Cart not found",
-        )
-
-    # Verify product exists and is active
-    product = (
-        db.query(Product)
-        .filter(Product.product_id == request.product_id)
-        .first()
-    )
-    if product is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found",
-        )
-
-    if not product.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found",
-        )
-
-    # Validate stock availability
-    if product.stock < request.quantity:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Insufficient stock",
-        )
-
-    # Check if product already exists in cart
-    existing_item = None
-    for item in cart.items:
-        if str(item.product_id) == request.product_id:
-            existing_item = item
-            break
-
-    if existing_item is not None:
-        # Increment quantity
-        new_quantity = existing_item.quantity + request.quantity
-        if product.stock < new_quantity:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Insufficient stock",
-            )
-        existing_item.quantity = new_quantity
-    else:
-        # Create new cart item with price snapshot from product
-        item = CartItem(
-            cart_id=cart_id,
-            product_id=request.product_id,
-            quantity=request.quantity,
-            price_at_time=float(product.price),
-        )
-        db.add(item)
-
+    service = CartService(db)
     try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Failed to add item to cart",
-        )
-
+        service.add_item(cart_id, request.product_id, request.quantity,
+                         current_user)
+    except CartError as exc:
+        raise _handle_service_error(exc)
     # Reload cart with items for response
-    cart = (
-        db.query(Cart)
-        .options(
-            joinedload(Cart.items).joinedload(CartItem.product)
-        )
-        .filter(Cart.cart_id == cart_id)
-        .first()
-    )
-
+    cart = service.get_cart(cart_id, current_user)
     return _cart_to_response(cart)
 
 
@@ -485,13 +352,13 @@ def update_cart_item(
     cart_id: str,
     item_id: str,
     request: CartItemUpdateRequest,
-    db: Session = Depends(get_db),
+    db=Depends(get_db),
     current_user: CurrentUser = Depends(get_current_user),
 ) -> CartResponse:
     """Update the quantity of an item in the cart.
 
-    Only the cart owner can update it. The price snapshot is preserved
-    and is not refreshed from the current product price.
+    Only the cart owner can update it. The price snapshot is
+    preserved and not refreshed from the current product price.
 
     Args:
         cart_id: The unique cart identifier.
@@ -509,95 +376,19 @@ def update_cart_item(
         HTTPException: 409 if insufficient stock.
         HTTPException: 500 if database error occurs.
     """
-    # Require authentication
     if current_user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing or invalid authorization header",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
-    # Verify cart exists and belongs to user
-    cart = (
-        db.query(Cart)
-        .options(
-            joinedload(Cart.items).joinedload(CartItem.product)
-        )
-        .filter(Cart.cart_id == cart_id)
-        .first()
-    )
-    if cart is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Cart not found",
-        )
-
-    if str(cart.user_id) != current_user.user_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Cart not found",
-        )
-
-    # Find the item in the cart
-    item = None
-    for i in cart.items:
-        if str(i.cart_item_id) == item_id:
-            item = i
-            break
-
-    if item is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Item not found",
-        )
-
-    # Verify product exists and is active
-    product = (
-        db.query(Product)
-        .filter(Product.product_id == item.product_id)
-        .first()
-    )
-    if product is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found",
-        )
-
-    if not product.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found",
-        )
-
-    # Validate stock availability
-    if product.stock < request.quantity:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Insufficient stock",
-        )
-
-    # Update quantity (price snapshot preserved)
-    item.quantity = request.quantity
-
+    service = CartService(db)
     try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Failed to update cart item",
-        )
-
-    # Reload cart with items for response
-    cart = (
-        db.query(Cart)
-        .options(
-            joinedload(Cart.items).joinedload(CartItem.product)
-        )
-        .filter(Cart.cart_id == cart_id)
-        .first()
-    )
-
+        service.update_item(cart_id, item_id, request.quantity,
+                            current_user)
+    except CartError as exc:
+        raise _handle_service_error(exc)
+    cart = service.get_cart(cart_id, current_user)
     return _cart_to_response(cart)
 
 
@@ -611,7 +402,7 @@ def update_cart_item(
 def remove_item_from_cart(
     cart_id: str,
     item_id: str,
-    db: Session = Depends(get_db),
+    db=Depends(get_db),
     current_user: CurrentUser = Depends(get_current_user),
 ) -> dict:
     """Remove an item from the cart.
@@ -630,94 +421,23 @@ def remove_item_from_cart(
 
     Raises:
         HTTPException: 401 if not authenticated.
-        HTTPException: 404 if cart or item not found, or not owned by user.
+        HTTPException: 404 if cart or item not found, or not owned
+            by user.
         HTTPException: 500 if database error occurs.
     """
-    # Require authentication
     if current_user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing or invalid authorization header",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
-    # Verify cart exists and belongs to user
-    cart = (
-        db.query(Cart)
-        .filter(Cart.cart_id == cart_id)
-        .first()
-    )
-    if cart is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Cart not found",
-        )
-
-    if str(cart.user_id) != current_user.user_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Cart not found",
-        )
-
-    # Find and remove the item
-    item = None
-    for i in cart.items:
-        if str(i.cart_item_id) == item_id:
-            item = i
-            break
-
-    if item is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Item not found",
-        )
-
+    service = CartService(db)
     try:
-        db.delete(item)
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Failed to remove item from cart",
-        )
-
+        service.remove_item(cart_id, item_id, current_user)
+    except CartError as exc:
+        raise _handle_service_error(exc)
     return {
         "message": "Item removed from cart",
         "cart_id": cart_id,
         "item_id": item_id,
     }
-
-
-def _cart_to_response(cart: Cart) -> CartResponse:
-    """Convert a Cart model instance to a CartResponse schema.
-
-    Eager-loads items with their associated products to avoid
-    N+1 query issues.
-
-    Args:
-        cart: Cart model instance.
-
-    Returns:
-        CartResponse: The serialized cart response.
-    """
-    items = [
-        CartItemResponse(
-            cart_item_id=str(item.cart_item_id),
-            cart_id=str(item.cart_id),
-            product_id=str(item.product_id),
-            quantity=item.quantity,
-            price_at_time=float(item.price_at_time),
-            created_at=item.created_at,
-        )
-        for item in cart.items
-    ]
-
-    return CartResponse(
-        cart_id=str(cart.cart_id),
-        user_id=str(cart.user_id),
-        items=items,
-        created_at=cart.created_at,
-        last_updated_at=cart.last_updated_at,
-        expires_at=cart.expires_at,
-    )

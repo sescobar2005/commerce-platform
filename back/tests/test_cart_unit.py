@@ -183,7 +183,7 @@ class TestCartEndpoint:
         with pytest.raises(HTTPException) as exc_info:
             create_cart(db=self.mock_db, current_user=current_user)
 
-        assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+        assert exc_info.value.status_code == status.HTTP_409_CONFLICT
         self.mock_db.rollback.assert_called_once()
 
     # === Cart Retrieval Tests ===
