@@ -30,7 +30,7 @@ This unit builds on the completed authentication module, seller module, product 
 | Alembic migration environment + initial migration applied | Complete (revision `31b998880986` on `plataforma_comercio_dev`) |
 | Revoked refresh token migration applied | Complete (revision `b67c867d7c26` on `plataforma_comercio_dev`) |
 | Database models (users, sellers, stores, categories, products, revoked_refresh_tokens, carts, cart_items) | Complete |
-| Cart and CartItem Alembic migration (revision `7f3a1e2c4d8b`) | Complete (commit `b586e55`) |
+| Cart and CartItem Alembic migration (revision `7f3a1e2c4d8b`) | Applied to `plataforma_comercio_dev` (commit `b586e55`) |
 | Alembic migration directory tracking (`.gitignore` allows `*.py` files) | Complete (commit `ba13a24`) |
 | Password security service (Argon2id) + unit tests | Complete |
 | JWT token service (RS256) + unit tests | Complete |
@@ -46,6 +46,7 @@ This unit builds on the completed authentication module, seller module, product 
 | Category module — full CRUD + listing | Complete (commit `b7f0f02`) |
 | Category module — admin authorization | Complete (commit `c8e3762`) |
 | Cart module — full CRUD + item management | Complete (commits `e9efb6d`, `37ea458`, `d16c02d`, `b64329a`) |
+| Cart service/repository refactoring — all persistence moved to repositories | Complete (commits `dc57c2a`, `b2128e7`, `0d1b6cb`, `488bcea`) |
 | Psycopg 3 driver dependency | Complete |
 | Local PostgreSQL instance | Provisioned |
 | Development database (`plataforma_comercio_dev`) | Created and migrated |

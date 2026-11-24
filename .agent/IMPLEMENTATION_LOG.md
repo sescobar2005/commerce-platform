@@ -1218,3 +1218,82 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Tests or checks | `alembic heads` → `7f3a1e2c4d8b (head)`; `alembic history` → linear chain base → 31b998880986 → b67c867d7c26 → 7f3a1e2c4d8b; `alembic upgrade head --sql` generates valid SQL for all 3 migrations including carts/cart_items tables |
 | Commit hash | `b586e55` |
 | Observations | Created Cart (carts) and CartItem (cart_items) migration. Cart: cart_id PK UUID, user_id FK→users (CASCADE), created_at, last_updated_at, expires_at. CartItem: cart_item_id PK UUID, cart_id FK→carts (CASCADE), product_id FK→products (RESTRICT), quantity (check > 0), price_at_time Numeric(10,2), created_at, UniqueConstraint(cart_id, product_id). Models already registered in alembic/env.py and models/__init__.py. No database connection available to run actual migration; verified via `alembic upgrade head --sql`. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-24 |
+| Phase | Phase 2 (Database Stabilization) - Apply Cart/CartItem migration |
+| Completed unit | Applied Alembic migration 7f3a1e2c4d8b to plataforma_comercio_dev |
+| Files affected | back/alembic/versions/7f3a1e2c4d8b_add_cart_and_cart_item_tables.py (already committed in b586e55) |
+| Tests or checks | Migration applied via alembic upgrade head; alembic current -> 7f3a1e2c4d8b; carts and cart_items tables verified with all columns, FKs, constraints, indexes; all 7 original tables preserved intact |
+| Commit hash | None (database-only change, no source code modified) |
+| Observations | Applied migration 7f3a1e2c4d8b to plataforma_comercio_dev. Database revision is now 7f3a1e2c4d8b (was b67c867d7c26). Both carts and cart_items tables exist with correct schema. All 7 original tables remain intact. No application code changes required. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-24 |
+| Phase | Phase 2 (Database Stabilization) - Cart service/repository refactoring |
+| Completed unit | Delegated commit/rollback/refresh to CartRepository in create_cart |
+| Files affected | `back/src/core/cart/repositories.py`, `back/src/core/cart/services.py` |
+| Tests or checks | All 64 cart unit tests pass (64 passed, 0 failed, 0 skipped) |
+| Commit hash | `dc57c2a` |
+| Observations | Added CartRepository.commit()/rollback()/refresh() methods. CartService.create_cart() now delegates all session lifecycle operations to the repository instead of calling db.commit()/db.rollback()/db.refresh() directly. No change to business rules or endpoint behavior. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-24 |
+| Phase | Phase 2 (Database Stabilization) - Cart service/repository refactoring |
+| Completed unit | Delegated add/delete/commit/rollback/refresh to CartRepository in update_cart/delete_cart |
+| Files affected | `back/src/core/cart/services.py` |
+| Tests or checks | All 64 cart unit tests pass (64 passed, 0 failed, 0 skipped) |
+| Commit hash | `b2128e7` |
+| Observations | CartService.update_cart() and CartService.delete_cart() now use cart_repo.add()/delete()/commit()/rollback()/refresh() instead of direct db calls. No change to business rules or endpoint behavior. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-24 |
+| Phase | Phase 2 (Database Stabilization) - Cart service/repository refactoring |
+| Completed unit | Delegated add/commit/rollback/refresh to CartItemRepository in add_item |
+| Files affected | `back/src/core/cart/repositories.py`, `back/src/core/cart/services.py` |
+| Tests or checks | All 64 cart unit tests pass (64 passed, 0 failed, 0 skipped) |
+| Commit hash | `0d1b6cb` |
+| Observations | Added CartItemRepository.commit()/rollback()/refresh() methods. CartService.add_item() now uses item_repo for all persistence operations. No change to business rules or endpoint behavior. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-24 |
+| Phase | Phase 2 (Database Stabilization) - Cart service/repository refactoring |
+| Completed unit | Delegated add/delete/commit/rollback/refresh to CartItemRepository in update_item/remove_item |
+| Files affected | `back/src/core/cart/services.py` |
+| Tests or checks | All 64 cart unit tests pass (64 passed, 0 failed, 0 skipped) |
+| Commit hash | `488bcea` |
+| Observations | CartService.update_item() and CartService.remove_item() now use item_repo.add()/delete()/commit()/rollback()/refresh() instead of direct db calls. No change to business rules or endpoint behavior. |
+
+### Decision Record
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-24 |
+| Topic | ProductRepository creation |
+| Decision | Do NOT create ProductRepository |
+| Rationale | No existing ProductRepository pattern in codebase (only CartRepository/CartItemRepository exist). Only 2 simple read-only Product queries remain in CartService (add_item and update_item). These are read queries, not persistence/write operations. Creating a ProductRepository for just 2 read queries would be an unnecessary abstraction per task restrictions. |
+
+### Decision Record
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-24 |
+| Topic | Cart expiration validation |
+| Decision | Do NOT implement future-date validation for expires_at |
+| Rationale | Documented requirements do not support it: (1) API_SPECIFICATION.md has no cart expiration validation rule, (2) Cart model has no check constraint on expires_at, (3) CartUpdateRequest schema allows Optional[datetime] with no future-date validation, (4) CartService.update_cart() sets expires_at without validation, (5) Existing tests pass naive past datetimes (e.g., datetime(2024, 12, 31)) expecting success. Null is explicitly allowed (test_cart_update_clear_expiration). Timezone handling is inconsistent: model uses DateTime(timezone=True) but tests/schema use naive datetimes. Per task rules: "If the requirements are unclear, do not invent a rule." No production code, test, or exception changes made. |
+

@@ -12,7 +12,16 @@
 | Completed units | All auth endpoints, all product endpoints, all category endpoints, all cart endpoints (create, retrieve, update, delete, add item, update item, remove item), Cart models (Cart, CartItem), Cart migrations, FastAPI entry point, Config fix (ALGORITHM optional), Alembic .gitignore fix, Cart/CartItem migration |
 | Pending units | Cart module remaining endpoints (validate, merge), Order module |
 | Verification status | 225/225 tests pass; App imports and starts successfully; 25 API routes registered; Alembic migration chain: base → 31b998880986 → b67c867d7c26 → 7f3a1e2c4d8b (head); `alembic upgrade head --sql` generates valid SQL; Python syntax verified for all files |
-| Last updated | 2026-11-23 |
+| Last updated | 2026-11-24 |
+
+### Notes
+
+Cart service/repository refactoring (commits `dc57c2a`, `b2128e7`, `0d1b6cb`, `488bcea`):
+- All persistence operations (db.add()/db.delete()/db.commit()/db.rollback()/db.refresh()) moved from CartService to CartRepository/CartItemRepository
+- CartRepository: add, delete, get_by_id, get_by_user_id, commit, rollback, refresh
+- CartItemRepository: add, delete, get_by_id, get_by_cart_and_product, commit, rollback, refresh
+- Decision: No ProductRepository created — only 2 read-only Product queries remain in CartService; no existing ProductRepository pattern in codebase; creating one would be unnecessary abstraction
+- All 64 cart unit tests pass (64 passed, 0 failed, 0 skipped)
 
 ### Notes
 
@@ -38,11 +47,21 @@ Category module (commits `b7f0f02`, `c8e3762`):
 Cart module (commits `e9efb6d`, `37ea458`, `d16c02d`, `b64329a`):
 - Full CRUD + item management endpoints
 
-Database infrastructure (commits `79367fd`, `c6752fd`, `ba13a24`, `b586e55`):
+Database infrastructure (commits `79367fd`, `c6752fd`, `ba13a24`, `b586e55`, `19d1120`):
 - back/src/main.py - FastAPI app entry point with all 5 routers registered
 - config.py - ALGORITHM made optional with RS256 default
 - .gitignore - alembic/versions/* now tracked (except *.py files)
 - cart.py - Cart and CartItem SQLAlchemy models
-- 7f3a1e2c4d8b - Cart and CartItem Alembic migration
+- 7f3a1e2c4d8b - Cart and CartItem Alembic migration APPLIED to plataforma_comercio_dev
+- Verified: Alembic revision is `7f3a1e2c4d8b`, carts and cart_items tables exist with all columns/constraints/indexes, all 7 original tables preserved intact
 
 All pre-existing test failures (28) are unrelated SQLAlchemy model default / Alembic / session issues.
+
+### Expiration analysis (2026-11-24)
+
+| Field | Value |
+|-------|-------|
+| expires_at nullable? | Yes — model: `Optional[datetime]`, `nullable=True`; schema: `Optional[datetime] = Field(None)`; test `test_cart_update_clear_expiration` asserts `expires_at is None` |
+| Future-date validation documented? | No — API_SPECIFICATION.md, model (no check constraint), schema (no Pydantic validation), service (no validation) all lack future-date rule |
+| Timezone consistency | Inconsistent — model uses `DateTime(timezone=True)`, but tests and schema use naive datetimes (e.g., `datetime(2024, 12, 31)`) |
+| Decision | Do NOT implement future-date validation — requirements do not support it. No production code, test, or exception changes made. |
