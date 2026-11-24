@@ -209,13 +209,13 @@ class CartService:
                     product_id, new_quantity, product.stock
                 )
             existing_item.quantity = new_quantity
-            self.db.add(existing_item)
+            self.item_repo.add(existing_item)
             try:
-                self.db.commit()
+                self.item_repo.commit()
             except IntegrityError:
-                self.db.rollback()
+                self.item_repo.rollback()
                 raise CartError("Failed to add item to cart")
-            self.db.refresh(existing_item)
+            self.item_repo.refresh(existing_item)
             return existing_item
 
         item = CartItem(
@@ -226,11 +226,11 @@ class CartService:
         )
         self.item_repo.add(item)
         try:
-            self.db.commit()
+            self.item_repo.commit()
         except IntegrityError:
-            self.db.rollback()
+            self.item_repo.rollback()
             raise CartError("Failed to add item to cart")
-        self.db.refresh(item)
+        self.item_repo.refresh(item)
         return item
 
     def update_item(

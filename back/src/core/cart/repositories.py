@@ -129,3 +129,15 @@ class CartItemRepository:
         The caller is responsible for calling commit() on the session.
         """
         self.db.delete(item)
+
+    def commit(self) -> None:
+        """Commit the current transaction on the session."""
+        self.db.commit()
+
+    def rollback(self) -> None:
+        """Rollback the current transaction on the session."""
+        self.db.rollback()
+
+    def refresh(self, obj) -> None:
+        """Refresh the given object from the database."""
+        self.db.refresh(obj)
