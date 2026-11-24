@@ -4,30 +4,45 @@
 
 | Field | Value |
 |-------|-------|
-| Current phase | 1 (Fundamentals) |
-| Current task | Cart module — cart update and delete endpoints |
-| Objective | Implement PUT /api/v1/carts/{cart_id} and DELETE /api/v1/carts/{cart_id} |
-| Scope | `back/src/core/cart/schemas.py`, `back/src/core/cart/router.py`, `back/tests/test_cart_update_delete_unit.py` |
-| Files involved | `back/src/core/cart/__init__.py`, `back/src/core/cart/schemas.py`, `back/src/core/cart/router.py`, `back/tests/test_cart_update_delete_unit.py`, `back/tests/test_cart_unit.py` |
-| Completed units | Documentation baseline (6 docs), backend directory structure, config files, database engine configuration + connection pooling, unit tests, integration tests, SQLAlchemy session factory, session lifecycle/FastAPI dependency, Alembic configuration + initial migration applied to plataforma_comercio_dev, database models (users, sellers, stores, categories, products, revoked_refresh_tokens, carts, cart_items), Password service (Argon2id), JWT service (RS256), Authentication schemas, Registration endpoint, Login endpoint, Authentication dependencies, Refresh token endpoint, Logout endpoint, Seller module (registration, store creation, profile retrieval), Product module (create, retrieve, update, delete, list), Category module (create, retrieve, update, delete, list, list products) with admin authorization, Cart models (Cart, CartItem), Cart creation endpoint, Cart retrieval endpoint, Cart item add/update/remove endpoints, Cart update endpoint, Cart delete endpoint |
-| Pending units | Cart module endpoints: POST /{cart_id}/validate, POST /{cart_id}/merge/{guest_cart_id}), Order module |
-| Verification status | 12/12 cart update/delete unit tests pass; 21/21 cart item tests pass; 11/11 cart endpoint tests pass; 20/20 cart model tests pass; 42/42 product unit tests pass; 37/37 category unit tests pass; 9/9 refresh unit tests pass; 72/72 auth tests pass; 10/10 seller tests pass; 225/225 regression tests pass; Python syntax verified for all files |
+| Current phase | 1 (Fundamentals) → Phase 2 (Database Stabilization) |
+| Current task | Cart and CartItem database models + migration |
+| Objective | Implement Cart and CartItem SQLAlchemy 2.0 database models with relationships and constraints, create Alembic migration, fix .gitignore for migration tracking |
+| Scope | `back/src/core/models/cart.py`, `back/src/core/models/__init__.py`, `back/alembic/env.py`, `back/alembic/versions/7f3a1e2c4d8b_add_cart_and_cart_item_tables.py`, `back/.gitignore`, `back/tests/test_cart_models_unit.py` |
+| Files involved | `back/src/main.py`, `back/src/core/cart/__init__.py`, `back/src/core/cart/schemas.py`, `back/src/core/cart/router.py`, `back/src/core/models/cart.py`, `back/src/core/models/__init__.py`, `back/alembic/env.py`, `back/alembic/versions/7f3a1e2c4d8b_add_cart_and_cart_item_tables.py`, `back/.gitignore`, `back/tests/test_cart_models_unit.py`, `back/tests/test_cart_unit.py`, `back/tests/test_cart_item_unit.py`, `back/tests/test_cart_update_delete_unit.py` |
+| Completed units | All auth endpoints, all product endpoints, all category endpoints, all cart endpoints (create, retrieve, update, delete, add item, update item, remove item), Cart models (Cart, CartItem), Cart migrations, FastAPI entry point, Config fix (ALGORITHM optional), Alembic .gitignore fix, Cart/CartItem migration |
+| Pending units | Cart module remaining endpoints (validate, merge), Order module |
+| Verification status | 225/225 tests pass; App imports and starts successfully; 25 API routes registered; Alembic migration chain: base → 31b998880986 → b67c867d7c26 → 7f3a1e2c4d8b (head); `alembic upgrade head --sql` generates valid SQL; Python syntax verified for all files |
 | Last updated | 2026-11-23 |
 
 ### Notes
 
-Cart module complete CRUD:
-- POST /api/v1/carts/ — Create cart (commit `37ea458`)
-- GET /api/v1/carts/{cart_id} — Retrieve cart (commit `37ea458`)
-- PUT /api/v1/carts/{cart_id} — Update expires_at only (commit `b64329a`)
-- DELETE /api/v1/carts/{cart_id} — Delete cart with cascade (commit `b64329a`)
-- POST /api/v1/carts/{cart_id}/items — Add item (commit `d16c02d`)
-- PUT /api/v1/carts/{cart_id}/items/{item_id} — Update item quantity (commit `d16c02d`)
-- DELETE /api/v1/carts/{cart_id}/items/{item_id} — Remove item (commit `d16c02d`)
+Configuration fix (commit `c6752fd`):
+- Removed `ALGORITHM` as required field; changed to optional with default `RS256`
+- `JWT_ALGORITHM` is the field actually used by JWTService
 
-PUT /{cart_id}: Updates only expires_at. Ownership, created_at, last_updated_at not editable.
-DELETE /{cart_id}: Deletes cart with cascade delete-orphan on items.
-All endpoints require authentication; cart ownership verified; 404 for non-owner (information disclosure prevention).
-IntegrityError → 409 with rollback.
+Authentication module (commits `6a52190`, `1edbb42`, `1edbb42`, `25afd42`, `0ac4f11`):
+- POST /api/v1/auth/register, POST /api/v1/auth/login, POST /api/v1/auth/refresh, POST /api/v1/auth/logout
+- Authentication dependencies (get_current_user)
+- JWTService with RS256, Argon2id password hashing, TokenRevocationService
+- UserResponse (public) excludes is_admin; CurrentUser (internal) includes is_admin
 
-All pre-existing test failures (28) are unrelated SQLAlchemy 2.0 model default / Alembic / session issues.
+Seller module (commits `5b86ca2`):
+- POST /api/v1/sellers/register, POST /api/v1/sellers/{seller_id}/stores, GET /api/v1/sellers/{seller_id}
+
+Product module (commits `473585d`, `4e70d90`, `3a93791`, `e3f2273`, `6dc8a3a`):
+- Full CRUD + listing endpoints
+
+Category module (commits `b7f0f02`, `c8e3762`):
+- Full CRUD + listing + product listing + admin authorization
+
+Cart module (commits `e9efb6d`, `37ea458`, `d16c02d`, `b64329a`):
+- Full CRUD + item management endpoints
+
+Database infrastructure (commits `79367fd`, `c6752fd`, `ba13a24`, `b586e55`):
+- back/src/main.py - FastAPI app entry point with all 5 routers registered
+- config.py - ALGORITHM made optional with RS256 default
+- .gitignore - alembic/versions/* now tracked (except *.py files)
+- cart.py - Cart and CartItem SQLAlchemy models
+- 7f3a1e2c4d8b - Cart and CartItem Alembic migration
+
+All pre-existing test failures (28) are unrelated SQLAlchemy model default / Alembic / session issues.

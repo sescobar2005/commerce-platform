@@ -10,21 +10,28 @@
 
 ## Next Recommended Implementation Unit
 
-**Cart module** (cart-module): Shopping cart functionality.
+**Cart module remaining endpoints** (cart-module): POST /{cart_id}/validate, POST /{cart_id}/merge/{guest_cart_id}
 
-This unit builds on the completed authentication module, seller module, product module, and category module.
+This unit builds on the completed authentication module, seller module, product module, category module, and complete cart module.
 
-## Dependencies
+## Current Development Phase
+
+**Phase 1: Fundamentals** (Weeks 1-2)
+
+**Backend infrastructure — Complete**
 
 | Dependency | Status |
 |------------|--------|
 | Backend directory structure (`back/src/`, `back/tests/`, `back/alembic/`) | Complete |
 | Configuration files (`.env.example`, `.gitignore`, `pyproject.toml`, `README.md`) | Complete |
 | Pytest Python import path (`pythonpath` in `pyproject.toml`) | Complete (commit `14470c9`) |
+| FastAPI application entry point (`back/src/main.py`) | Complete (commit `79367fd`) |
 | SQLAlchemy 2.0 database engine + session factory + `get_db()` dependency | Complete |
 | Alembic migration environment + initial migration applied | Complete (revision `31b998880986` on `plataforma_comercio_dev`) |
 | Revoked refresh token migration applied | Complete (revision `b67c867d7c26` on `plataforma_comercio_dev`) |
 | Database models (users, sellers, stores, categories, products, revoked_refresh_tokens, carts, cart_items) | Complete |
+| Cart and CartItem Alembic migration (revision `7f3a1e2c4d8b`) | Complete (commit `b586e55`) |
+| Alembic migration directory tracking (`.gitignore` allows `*.py` files) | Complete (commit `ba13a24`) |
 | Password security service (Argon2id) + unit tests | Complete |
 | JWT token service (RS256) + unit tests | Complete |
 | Authentication Pydantic schemas + unit tests | Complete |
@@ -35,16 +42,10 @@ This unit builds on the completed authentication module, seller module, product 
 | Logout endpoint + unit tests | Complete |
 | Authentication dependencies (get_current_user) + unit tests | Complete |
 | Token revocation service + unit tests | Complete |
-| Product module — creation endpoint (`POST /api/v1/products`) | Complete (commit `473585d`) |
-| Product module — retrieval endpoint (`GET /api/v1/products/{product_id}`) | Complete (commit `4e70d90`) |
-| Product module — update endpoint (`PUT /api/v1/products/{product_id}`) | Complete (commit `3a93791`) |
-| Product module — deletion endpoint (`DELETE /api/v1/products/{product_id}`) | Complete (commit `e3f2273`) |
-| Product module — deletion unit tests (6/6 unit tests pass) | Complete |
-| Product module — listing endpoint (`GET /api/v1/products/`) | Complete (commit `6dc8a3a`) |
-| Product module — listing unit tests (17/17 unit tests pass) | Complete |
-| Category module — full CRUD and listing | Complete (commit `b7f0f02`) |
-| Category module — admin authorization for write endpoints | Complete (commit `c8e3762`) |
-| Category module — unit tests (37/37 unit tests pass) | Complete |
+| Product module — full CRUD + listing | Complete (commits `473585d`, `4e70d90`, `3a93791`, `e3f2273`, `6dc8a3a`) |
+| Category module — full CRUD + listing | Complete (commit `b7f0f02`) |
+| Category module — admin authorization | Complete (commit `c8e3762`) |
+| Cart module — full CRUD + item management | Complete (commits `e9efb6d`, `37ea458`, `d16c02d`, `b64329a`) |
 | Psycopg 3 driver dependency | Complete |
 | Local PostgreSQL instance | Provisioned |
 | Development database (`plataforma_comercio_dev`) | Created and migrated |
