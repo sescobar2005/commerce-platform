@@ -119,13 +119,13 @@ class CartService:
 
         cart.expires_at = request.expires_at
 
-        self.db.add(cart)
+        self.cart_repo.add(cart)
         try:
-            self.db.commit()
+            self.cart_repo.commit()
         except IntegrityError:
-            self.db.rollback()
+            self.cart_repo.rollback()
             raise CartError("Failed to update cart")
-        self.db.refresh(cart)
+        self.cart_repo.refresh(cart)
         return cart
 
     def delete_cart(self, cart_id: str, current_user: CurrentUser) -> Cart:
@@ -146,11 +146,11 @@ class CartService:
         """
         cart = self.get_cart(cart_id, current_user)
 
-        self.db.delete(cart)
+        self.cart_repo.delete(cart)
         try:
-            self.db.commit()
+            self.cart_repo.commit()
         except IntegrityError:
-            self.db.rollback()
+            self.cart_repo.rollback()
             raise CartError("Failed to delete cart")
         return cart
 
