@@ -17,6 +17,7 @@ from src.core.cart.schemas import (
     CartItemResponse,
     CartItemUpdateRequest,
     CartResponse,
+    CartUpdateRequest,
 )
 
 router = APIRouter(prefix="/carts", tags=["carts"])
@@ -172,6 +173,165 @@ def get_cart(
         )
 
     return _cart_to_response(cart)
+
+
+@router.put(
+    "/{cart_id}",
+    response_model=CartResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Update a cart",
+    description="Update a cart's expiration time. "
+    "Only the cart owner can update it. "
+    "Ownership and timestamps are not editable.",
+)
+def update_cart(
+    cart_id: str,
+    request: CartUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+) -> CartResponse:
+    """Update a cart's expiration time.
+
+    Only the expires_at field can be updated. Ownership and internal
+    timestamps are not editable.
+
+    Args:
+        cart_id: The unique cart identifier.
+        request: Cart update request (expires_at).
+        db: Database session dependency.
+        current_user: Authenticated user from JWT token.
+
+    Returns:
+        CartResponse: The updated cart.
+
+    Raises:
+        HTTPException: 401 if not authenticated.
+        HTTPException: 404 if cart not found or not owned by user.
+        HTTPException: 500 if database error occurs.
+    """
+    # Require authentication
+    if current_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing or invalid authorization header",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Verify cart exists and belongs to user
+    cart = (
+        db.query(Cart)
+        .filter(Cart.cart_id == cart_id)
+        .first()
+    )
+    if cart is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Cart not found",
+        )
+
+    if str(cart.user_id) != current_user.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Cart not found",
+        )
+
+    # Update editable fields only
+    cart.expires_at = request.expires_at
+
+    try:
+        db.add(cart)
+        db.commit()
+        db.refresh(cart)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Failed to update cart",
+        )
+
+    # Reload cart with items for response
+    cart = (
+        db.query(Cart)
+        .options(
+            joinedload(Cart.items).joinedload(CartItem.product)
+        )
+        .filter(Cart.cart_id == cart_id)
+        .first()
+    )
+
+    return _cart_to_response(cart)
+
+
+@router.delete(
+    "/{cart_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Delete a cart",
+    description="Delete a cart and all its items. "
+    "Only the cart owner can delete it.",
+)
+def delete_cart(
+    cart_id: str,
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+) -> dict:
+    """Delete a cart and all its items.
+
+    Only the cart owner can delete it. Cart items are cascade-deleted
+    via the relationship cascade rule.
+
+    Args:
+        cart_id: The unique cart identifier.
+        db: Database session dependency.
+        current_user: Authenticated user from JWT token.
+
+    Returns:
+        dict: A status message confirming the cart was deleted.
+
+    Raises:
+        HTTPException: 401 if not authenticated.
+        HTTPException: 404 if cart not found or not owned by user.
+        HTTPException: 500 if database error occurs.
+    """
+    # Require authentication
+    if current_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing or invalid authorization header",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Verify cart exists and belongs to user
+    cart = (
+        db.query(Cart)
+        .filter(Cart.cart_id == cart_id)
+        .first()
+    )
+    if cart is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Cart not found",
+        )
+
+    if str(cart.user_id) != current_user.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Cart not found",
+        )
+
+    try:
+        db.delete(cart)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Failed to delete cart",
+        )
+
+    return {
+        "message": "Cart deleted",
+        "cart_id": cart_id,
+    }
 
 
 @router.post(

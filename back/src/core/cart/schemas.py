@@ -72,3 +72,16 @@ class CartResponse(BaseModel):
     created_at: datetime
     last_updated_at: datetime
     expires_at: Optional[datetime]
+
+
+class CartUpdateRequest(BaseModel):
+    """Request schema for updating a cart.
+
+    Only the expires_at field can be updated. Ownership, timestamps,
+    and other internal fields are not editable.
+    """
+
+    expires_at: Optional[datetime] = Field(
+        None,
+        description="Optional timestamp when the cart expires",
+    )
