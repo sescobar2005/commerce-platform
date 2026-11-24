@@ -257,8 +257,9 @@ class TestCartDelete:
         self.mock_db = MagicMock()
 
     def _setup_cart_query(self, cart):
-        """Configure mock for cart query: query().filter().first()"""
+        """Configure mock for cart query: query().options().filter().first()"""
         mock_query = MagicMock()
+        mock_query.options.return_value = mock_query
         mock_query.filter.return_value = mock_query
         mock_query.first.return_value = cart
         self.mock_db.query.return_value = mock_query
@@ -343,6 +344,7 @@ class TestCartDelete:
         cart = make_cart(cart_id=cart_id, user_id="user-123", items=[item])
 
         mock_query = MagicMock()
+        mock_query.options.return_value = mock_query
         mock_query.filter.return_value = mock_query
         mock_query.first.return_value = cart
         self.mock_db.query.return_value = mock_query

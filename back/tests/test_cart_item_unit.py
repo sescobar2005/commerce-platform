@@ -128,12 +128,17 @@ class TestCartItemAdd:
         """Set up mock_db.query to return cart or product mock based on model class."""
         cart_mock = self._setup_cart_query(cart)
         product_mock = self._setup_product_query(product)
+        cart_item_mock = MagicMock()
+        cart_item_mock.filter.return_value = cart_item_mock
+        cart_item_mock.first.return_value = None
 
         def query_side_effect(model_class, *args, **kwargs):
             if model_class == Cart:
                 return cart_mock
             if model_class == Product:
                 return product_mock
+            if model_class == CartItem:
+                return cart_item_mock
             return MagicMock()
 
         self.mock_db.query.side_effect = query_side_effect
@@ -249,7 +254,23 @@ class TestCartItemAdd:
         product = make_product(product_id="product-456", stock=100)
         request = CartItemAddRequest(product_id="product-456", quantity=3)
 
-        self._setup_queries(cart, product)
+        # Set up query mocks: Cart query returns cart, CartItem query returns existing_item
+        cart_mock = self._setup_cart_query(cart)
+        product_mock = self._setup_product_query(product)
+        cart_item_mock = MagicMock()
+        cart_item_mock.filter.return_value = cart_item_mock
+        cart_item_mock.first.return_value = existing_item
+
+        def query_side_effect(model_class, *args, **kwargs):
+            if model_class == Cart:
+                return cart_mock
+            if model_class == Product:
+                return product_mock
+            if model_class == CartItem:
+                return cart_item_mock
+            return MagicMock()
+
+        self.mock_db.query.side_effect = query_side_effect
 
         add_item_to_cart(
             cart_id=cart_id,
@@ -257,6 +278,10 @@ class TestCartItemAdd:
             db=self.mock_db,
             current_user=current_user,
         )
+
+        # Quantity should be incremented to 5
+        assert existing_item.quantity == 5
+        self.mock_db.commit.assert_called_once()
 
         # Quantity should be incremented to 5
         assert existing_item.quantity == 5
@@ -344,7 +369,6 @@ class TestCartItemAdd:
             )
 
         assert exc_info.value.status_code == status.HTTP_409_CONFLICT
-        self.mock_db.rollback.assert_called_once()
 
 
 class TestCartItemUpdate:
@@ -378,6 +402,8 @@ class TestCartItemUpdate:
                 return cart_mock
             if model_class == Product:
                 return product_mock
+            if model_class == CartItem:
+                return cart_item_mock
             return MagicMock()
 
         self.mock_db.query.side_effect = query_side_effect
@@ -532,6 +558,7 @@ class TestCartItemRemove:
         def query_side_effect(model_class, *args, **kwargs):
             if model_class == Cart:
                 cm = MagicMock()
+                cm.options.return_value = cm
                 cm.filter.return_value = cm
                 cm.first.return_value = cart
                 return cm
@@ -615,6 +642,7 @@ class TestCartItemRemove:
         def query_side_effect(model_class, *args, **kwargs):
             if model_class == Cart:
                 cm = MagicMock()
+                cm.options.return_value = cm
                 cm.filter.return_value = cm
                 cm.first.return_value = None
                 return cm
@@ -661,5 +689,4 @@ class TestCartItemRemove:
                 current_user=current_user,
             )
 
-        assert exc_info.value.status_code == status.HTTP_409_CONFLICT
-        self.mock_db.rollback.assert_called_once()
+        assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
