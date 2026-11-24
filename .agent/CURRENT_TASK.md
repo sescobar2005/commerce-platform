@@ -67,6 +67,17 @@ Database infrastructure (commits `79367fd`, `c6752fd`, `ba13a24`, `b586e55`, `19
 | Module test results | auth: 61/61 pass; security: 50/50 pass; cart: 64/64 pass; categories: 37/37 pass; products: 42/42 pass; sellers: 10/10 pass; shared: 290 passed overall (28 pre-existing failures unrelated to migration) |
 | Commit hashes | `3b0a669` auth; `3a941be` security; `a4ef954` cart; `74a5774` categories; `5409d4f` products; `5b45d3d` sellers; `5c3ab0d` pyproject.toml |
 
+### Database engine compatibility fix (commit `5c62cf0`)
+
+| Field | Value |
+|-------|-------|
+| Fix | `create_db_engine()` now conditionally passes QueuePool-only parameters (`pool_size`, `max_overflow`, `pool_timeout`, `pool_recycle`) only for non-SQLite URLs. `pool_pre_ping=True` is always passed. |
+| Root cause | SQLite's `SingletonThreadPool` rejects `max_overflow`, `pool_timeout`, `pool_size`, `pool_recycle` — these are QueuePool-only parameters |
+| Files changed | `back/src/core/database.py` (production fix), `back/tests/test_database_unit.py` (5 new focused tests) |
+| Focused test results | 5/5 passed: SQLite engine creation, pool_pre_ping on SQLite, no unsupported pool args on SQLite, PostgreSQL pool config preserved via mocks, ValueError on missing URL |
+| Existing database test results | 11 passed, 5 failed (5 pre-existing test expectation issues not addressed in this phase) |
+| Commit hash | `5c62cf0` |
+
 ### Expiration analysis (2026-11-24)
 
 | Field | Value |
@@ -75,3 +86,17 @@ Database infrastructure (commits `79367fd`, `c6752fd`, `ba13a24`, `b586e55`, `19
 | Future-date validation documented? | No — API_SPECIFICATION.md, model (no check constraint), schema (no Pydantic validation), service (no validation) all lack future-date rule |
 | Timezone consistency | Inconsistent — model uses `DateTime(timezone=True)`, but tests and schema use naive datetimes (e.g., `datetime(2024, 12, 31)`) |
 | Decision | Do NOT implement future-date validation — requirements do not support it. No production code, test, or exception changes made. |
+
+### Alembic and settings test corrections (commit pending)
+
+| Field | Value |
+|-------|-------|
+| Fix | Corrected `back/tests/test_alembic_unit.py` for A1–A6 audit findings |
+| A1–A3 | Alembic paths changed from `back/alembic.ini` / `back/alembic` to `alembic.ini` / `alembic` to match pytest execution from `back/` directory |
+| A4 | Metadata assertion changed from `len(Base.metadata.tables) == 0` to `len(Base.metadata.tables) > 0` with expected table subset check; added `from src.core import models` import to trigger model registration |
+| A5 | `hasattr(Settings, "DATABASE_URL")` changed to `"DATABASE_URL" in Settings.model_fields` for Pydantic v2 compatibility |
+| A6 | Missing-URL test isolated from developer's `.env` by patching `Settings.model_config` to use non-existent `.env.nonexistent` file |
+| Files changed | `back/tests/test_alembic_unit.py` |
+| Focused test results | 8/8 passed |
+| Commit hash | pending |
+

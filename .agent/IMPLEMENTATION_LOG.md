@@ -1381,4 +1381,28 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Commit hash | `5c3ab0d` |
 | Observations | Changed `testpaths = ["tests"]` to `testpaths = ["tests", "src"]` to discover tests in both shared back/tests/ and module-level src/core/*/tests/ directories. |
 
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-24 |
+| Phase | Phase 2 (Database Stabilization) - Database engine compatibility fix |
+| Completed unit | Fixed `create_db_engine()` to conditionally pass QueuePool-only parameters |
+| Files affected | `back/src/core/database.py`, `back/tests/test_database_unit.py` |
+| Tests or checks | 5 focused tests passed (SQLite engine creation, pool_pre_ping on SQLite, no unsupported pool args on SQLite, PostgreSQL pool config via mocks, ValueError on missing URL); existing database tests: 11 passed, 5 failed (pre-existing test expectation issues) |
+| Commit hash | `5c62cf0` |
+| Observations | `create_db_engine()` now only passes `pool_size`, `max_overflow`, `pool_timeout`, `pool_recycle` for non-SQLite URLs. `pool_pre_ping=True` is always passed. SQLite's `SingletonThreadPool` rejects QueuePool-only parameters. Root cause of test failures B2-B7 from the audit. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-24 |
+| Phase | Phase 2 (Database Stabilization) - Alembic and settings test corrections |
+| Completed unit | Corrected `back/tests/test_alembic_unit.py` for A1–A6 audit findings |
+| Files affected | `back/tests/test_alembic_unit.py` |
+| Tests or checks | 8/8 passed: alembic config loading (3), metadata integration (2), settings configuration (3) |
+| Commit hash | pending |
+| Observations | A1–A3: Alembic paths changed from `back/alembic.ini`/`back/alembic` to `alembic.ini`/`alembic` for pytest running from `back/` directory. A4: Metadata assertion changed from `len(Base.metadata.tables) == 0` to `len(Base.metadata.tables) > 0` with expected table subset; added `from src.core import models` import. A5: `hasattr(Settings, "DATABASE_URL")` changed to `"DATABASE_URL" in Settings.model_fields` for Pydantic v2. A6: Missing-URL test isolated from developer's `.env` by patching `Settings.model_config` to use non-existent `.env.nonexistent` file. |
+
 

@@ -14,6 +14,7 @@ from alembic.config import Config
 
 from src.core.database import Base
 from src.core.config import Settings
+from src.core import models  # noqa: F401 — ensures model tables register with Base.metadata
 
 
 class TestAlembicConfigLoading:
@@ -21,19 +22,19 @@ class TestAlembicConfigLoading:
 
     def test_alembic_config_can_be_loaded(self):
         """alembic.ini should be loadable as an Alembic Config object."""
-        config = Config("back/alembic.ini")
+        config = Config("alembic.ini")
         assert config is not None
-        assert config.get_main_option("script_location") == "back/alembic"
+        assert config.get_main_option("script_location") == "alembic"
 
     def test_alembic_config_has_sqlalchemy_url(self):
         """alembic.ini should reference DATABASE_URL via variable substitution."""
-        config = Config("back/alembic.ini")
+        config = Config("alembic.ini")
         url = config.get_main_option("sqlalchemy.url")
         assert url == "%(DATABASE_URL)s"
 
     def test_alembic_script_location_exists(self):
         """The script_location directory should exist."""
-        assert os.path.isdir("back/alembic")
+        assert os.path.isdir("alembic")
 
 
 class TestSqlAlchemyMetadataIntegration:
@@ -45,8 +46,10 @@ class TestSqlAlchemyMetadataIntegration:
         assert hasattr(Base.metadata, "tables")
 
     def test_metadata_has_no_tables_yet(self):
-        """No model tables should be registered yet (models not yet implemented)."""
-        assert len(Base.metadata.tables) == 0
+        """Model tables should be registered in Base.metadata."""
+        assert len(Base.metadata.tables) > 0
+        expected_tables = {"users", "sellers", "stores", "categories", "products", "carts", "cart_items"}
+        assert expected_tables.issubset(Base.metadata.tables.keys())
 
 
 class TestSettingsConfiguration:
@@ -54,7 +57,7 @@ class TestSettingsConfiguration:
 
     def test_settings_has_database_url(self):
         """Settings class should have DATABASE_URL field."""
-        assert hasattr(Settings, "DATABASE_URL")
+        assert "DATABASE_URL" in Settings.model_fields
 
     def test_database_url_from_env_var(self):
         """DATABASE_URL should be readable from environment variable."""
@@ -67,7 +70,13 @@ class TestSettingsConfiguration:
 
     def test_settings_raises_when_database_url_missing(self):
         """Settings should raise if DATABASE_URL is not set and no .env exists."""
-        if "DATABASE_URL" in os.environ:
-            del os.environ["DATABASE_URL"]
-        with pytest.raises(Exception):
-            Settings()
+        # Remove DATABASE_URL from environment to test isolation
+        env_backup = os.environ.pop("DATABASE_URL", None)
+        try:
+            # Point to non-existent env file to isolate from developer's .env
+            with patch.object(Settings, "model_config", {"env_file": ".env.nonexistent", "env_file_encoding": "utf-8"}):
+                with pytest.raises(Exception):
+                    Settings()
+        finally:
+            if env_backup is not None:
+                os.environ["DATABASE_URL"] = env_backup

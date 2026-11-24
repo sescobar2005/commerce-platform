@@ -48,6 +48,8 @@ This unit builds on the completed authentication module, seller module, product 
 | Cart module — full CRUD + item management | Complete (commits `e9efb6d`, `37ea458`, `d16c02d`, `b64329a`) |
 | Cart service/repository refactoring — all persistence moved to repositories | Complete (commits `dc57c2a`, `b2128e7`, `0d1b6cb`, `488bcea`) |
 | Test reorganization — modular test directory structure | Complete (commits `3b0a669`, `3a941be`, `a4ef954`, `74a5774`, `5409d4f`, `5b45d3d`, `5c3ab0d`) |
+| Database engine compatibility fix — `create_db_engine()` SQLite/PostgreSQL support | Complete (commit `5c62cf0`) |
+| Alembic and settings test corrections — A1–A6 in test_alembic_unit.py | Complete (commit pending) |
 | Local PostgreSQL instance | Provisioned |
 | Development database (`plataforma_comercio_dev`) | Created and migrated |
 | `DATABASE_URL` configured in `back/.env` | Configured |
