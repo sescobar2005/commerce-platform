@@ -12,7 +12,7 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session, joinedload
 
-from src.core.models.order import Order, OrderItem
+from src.core.models.order import Order, OrderItem, OrderSubitem
 
 
 class OrderRepository:
@@ -168,3 +168,81 @@ class OrderItemRepository:
         The caller is responsible for calling commit() on the session.
         """
         self.db.delete(item)
+
+
+class OrderSubitemRepository:
+    """Repository for OrderSubitem persistence operations.
+
+    All database interactions related to OrderSubitem entities are
+    encapsulated here.
+    """
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    def get_by_id(self, order_subitem_id: str) -> Optional[OrderSubitem]:
+        """Retrieve an order subitem by its ID.
+
+        Args:
+            order_subitem_id: The unique order subitem identifier.
+
+        Returns:
+            The OrderSubitem if found, None otherwise.
+        """
+        return (
+            self.db.query(OrderSubitem)
+            .filter(OrderSubitem.order_subitem_id == order_subitem_id)
+            .first()
+        )
+
+    def get_by_order_id(self, order_id: str) -> List[OrderSubitem]:
+        """Retrieve all order subitems belonging to an order.
+
+        Args:
+            order_id: The parent order identifier.
+
+        Returns:
+            A list of OrderSubitem objects belonging to the order,
+            ordered by created_at ascending.
+        """
+        return (
+            self.db.query(OrderSubitem)
+            .filter(OrderSubitem.order_id == order_id)
+            .order_by(OrderSubitem.created_at.asc())
+            .all()
+        )
+
+    def get_by_order_and_seller(
+        self, order_id: str, seller_id: str
+    ) -> Optional[OrderSubitem]:
+        """Retrieve a seller-specific subitem within an order.
+
+        Args:
+            order_id: The parent order identifier.
+            seller_id: The seller identifier.
+
+        Returns:
+            The OrderSubitem if found, None otherwise.
+        """
+        return (
+            self.db.query(OrderSubitem)
+            .filter(
+                OrderSubitem.order_id == order_id,
+                OrderSubitem.seller_id == seller_id,
+            )
+            .first()
+        )
+
+    def add(self, subitem: OrderSubitem) -> None:
+        """Add a new order subitem to the session.
+
+        The caller is responsible for calling commit() on the session.
+        """
+        self.db.add(subitem)
+
+    def delete(self, subitem: OrderSubitem) -> None:
+        """Delete an order subitem from the session.
+
+        The caller is responsible for calling commit() on the session.
+        """
+        self.db.delete(subitem)
