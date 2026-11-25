@@ -51,6 +51,7 @@ This unit builds on the completed authentication module, seller module, product 
 | Database engine compatibility fix — `create_db_engine()` SQLite/PostgreSQL support | Complete (commit `5c62cf0`) |
 | Alembic and settings test corrections — A1–A6 in test_alembic_unit.py | Complete (commit `8e20eff`) |
 | Model test corrections — C1–C11 in test_models_unit.py | Complete (commit `f20d2e6`) |
+| Model default flush verification — C1–C11 post-flush tests | Complete (commit `dd9a580`) |
 | Local PostgreSQL instance | Provisioned |
 | Development database (`plataforma_comercio_dev`) | Created and migrated |
 | `DATABASE_URL` configured in `back/.env` | Configured |

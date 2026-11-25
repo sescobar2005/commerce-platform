@@ -116,4 +116,18 @@ Database infrastructure (commits `79367fd`, `c6752fd`, `ba13a24`, `b586e55`, `19
 | Focused test results | 19/19 passed (11 previously failing now fixed) |
 | Commit hash | `f20d2e6` |
 
+### Model default flush tests (commit `dd9a580`)
+
+| Field | Value |
+|-------|-------|
+| Fix | Added 5 flush-verification tests to `back/tests/test_models_unit.py` verifying SQLAlchemy `default=` values are applied after `session.flush()` |
+| Tests added | TestUserModel::test_user_defaults_after_flush, TestSellerModel::test_seller_defaults_after_flush, TestStoreModel::test_store_defaults_after_flush, TestCategoryModel::test_category_defaults_after_flush, TestProductModel::test_product_defaults_after_flush |
+| Fields verified (12 total) | User: is_seller, is_verified, is_admin, is_moderator; Seller: is_verified; Store: is_active; Category: level, path, is_active; Product: stock, is_active, cost |
+| User server_default note | All four User boolean fields also declare `server_default=sql.false()`. `session.flush()` correctly populates both Python-side defaults and server-side defaults via INSERT...RETURNING semantics on SQLite. No `session.refresh()` needed — `flush()` materializes all column defaults on the instance. |
+| Files changed | `back/tests/test_models_unit.py` |
+| Focused test results | 5/5 passed |
+| Full file results | 24/24 passed |
+| Commit hash | `dd9a580` |
+
+
 

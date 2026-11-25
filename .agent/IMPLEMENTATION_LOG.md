@@ -1417,4 +1417,16 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Commit hash | `f20d2e6` |
 | Observations | Root cause: Python-side column defaults (`default=`) are NOT applied at model instance construction time in SQLAlchemy 2.0 — they are applied at flush/insert time only. All 11 failing tests asserted default values (`False`, `True`, `0`, `0.0`) but got `None`. Changed test assertions to check for `None` (the actual construction-time value). Updated docstrings to explain SQLAlchemy 2.0 default application timing. No production model changes were made — models already declare correct `default=` values per the task restriction ("Do not modify production models merely to satisfy incorrect test assumptions"). |
 
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-25 |
+| Phase | Phase 2 (Database Stabilization) - Model default flush verification |
+| Completed unit | Added 5 flush-verification tests to `back/tests/test_models_unit.py` |
+| Files affected | `back/tests/test_models_unit.py` |
+| Tests or checks | 5 new focused tests passed; full file: 24/24 passed |
+| Commit hash | `dd9a580` |
+| Observations | Added test_user_defaults_after_flush, test_seller_defaults_after_flush, test_store_defaults_after_flush, test_category_defaults_after_flush, test_product_defaults_after_flush. Each uses an isolated SQLite in-memory engine, creates required FK parent records, calls session.flush(), then asserts Python-side defaults are materialized. All four User boolean fields also declare server_default=sql.false() — flush() correctly populates both Python-side and server-side defaults. No session.refresh() needed. No production code changes. |
+
 
