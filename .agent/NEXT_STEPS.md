@@ -55,6 +55,7 @@ This unit builds on the completed authentication module, seller module, product 
 | Session test corrections — D1–D4 in test_session_unit.py | Complete (commit `204b9b0`) |
 | Database engine configuration test corrections — B1, B4–B7 in test_database_unit.py | Complete (commit `f222067`) |
 | Orders Unit 1: Database Migration + SQLAlchemy Models | Complete (commits `a0a3c81`, `495f520`, `a2a43c6`) |
+| Orders Unit 2a: Order and OrderItem Repositories | Complete (commit `b777629`) |
 | Local PostgreSQL instance | Provisioned |
 | Development database (`plataforma_comercio_dev`) | Created and migrated |
 | `DATABASE_URL` configured in `back/.env` | Configured |
@@ -68,15 +69,25 @@ This unit builds on the completed authentication module, seller module, product 
 | Alembic migration revision `8e7f6d5c4b3a` | Complete (commit `495f520`) |
 | Order model unit tests (70 tests) | Complete (commit `a2a43c6`) |
 | Full regression suite | 398 passed, 0 failed, 9 skipped |
-| Migration applied to database | Not yet applied (pending user authorization) |
+| Migration applied to database | Applied to `plataforma_comercio_dev` |
+
+## Orders Unit 2a — Completed
+
+| Item | Status |
+|------|--------|
+| OrderRepository — get_by_id, get_by_user_id, get_by_user_and_idempotency_key, add, delete | Complete (commit `b777629`) |
+| OrderItemRepository — get_by_id, get_by_order_id, add, delete | Complete (commit `b777629`) |
+| Order model unit tests (70 tests) | Complete (commit `a2a43c6`) |
+| Order repository unit tests (14 tests) | Complete (commit `b777629`) |
+| Full regression suite | 412 passed, 0 failed, 9 skipped |
 
 ## Next Recommended Implementation Unit
 
-**Orders Unit 2: Order Services and Repository**
+**Orders Unit 2b: OrderItem, OrderSubitem, Payment, Commission Repositories**
 
-Create order service layer (`back/src/core/orders/services.py`) and order repository layer (`back/src/core/orders/repositories.py`) following the cart module pattern:
-- Order creation from cart items
-- Order retrieval
-- Order status transitions
-- Seller sub-order grouping
-- Cart validation before order creation
+Create remaining order repository classes:
+- OrderSubitemRepository: get_by_id, get_by_order_id, get_by_order_and_seller, add, delete
+- PaymentRepository: get_by_id, get_by_order_id, get_by_order_and_idempotency_key, add, delete
+- CommissionRepository: get_by_id, get_by_seller_id, get_by_order_subitem_id, add, delete
+
+Then implement OrderService with transaction-boundary management (commit/rollback at service layer, not repository).

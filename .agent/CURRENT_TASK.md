@@ -170,7 +170,21 @@ Database infrastructure (commits `79367fd`, `c6752fd`, `ba13a24`, `b586e55`, `19
 | Test results | 70/70 order model tests pass; full suite: 398 passed, 0 failed, 9 skipped |
 | Commit hashes | `a0a3c81` (models), `495f520` (migration), `a2a43c6` (tests) |
 | Observations | Orders module database schema complete. Orders RESTRICT references users (preserves order history on user deletion). Order items snapshot product_name, product_sku, price. Order subitems have UNIQUE(order_id, seller_id). Payments and commissions have unique idempotency constraints. Product.reserved_quantity tracks stock reserved for pending orders. Available stock = stock - reserved_quantity. |
-| Migration | Revision `8e7f6d5c4b3a`, parent `7f3a1e2c4d8b`. Creates: orders, order_items, order_subitems, payments, commissions. Adds reserved_quantity to products with 3 CHECK constraints. Downgrade reverses all changes. Migration NOT yet applied to database. |
+| Migration | Revision `8e7f6d5c4b3a`, parent `7f3a1e2c4d8b`. Creates: orders, order_items, order_subitems, payments, commissions. Adds reserved_quantity to products with 3 CHECK constraints. Downgrade reverses all changes. Migration applied to `plataforma_comercio_dev`. |
+
+### Orders Unit 2a: Order and OrderItem Repositories (commit `b777629`)
+
+| Field | Value |
+|-------|-------|
+| Completed unit | Orders repository layer - OrderRepository and OrderItemRepository |
+| Files affected | `back/src/core/orders/repositories.py` (new), `back/src/core/orders/tests/test_order_repositories_unit.py` (new) |
+| Repository classes | OrderRepository, OrderItemRepository |
+| OrderRepository methods | get_by_id(order_id), get_by_user_id(user_id, skip, limit), get_by_user_and_idempotency_key(user_id, idempotency_key), add(order), delete(order) |
+| OrderItemRepository methods | get_by_id(order_item_id), get_by_order_id(order_id), add(item), delete(item) |
+| Transaction rules | No commit()/rollback()/refresh() in repositories. Service layer owns transaction boundaries. |
+| Test results | 14/14 order repository tests pass; full suite: 412 passed, 0 failed, 9 skipped |
+| Commit hash | `b777629` |
+| Observations | Repository pattern follows CartRepository conventions. OrderRepository.get_by_id eagerly loads items with products via joinedload. OrderRepository.get_by_user_id supports pagination (skip/limit) and user isolation. OrderRepository.get_by_user_and_idempotency_key scopes lookup by both user_id and idempotency_key. OrderItemRepository.get_by_order_id scopes by order_id. No commit/rollback/refresh methods in repositories. |
 | Last updated | 2026-11-25 |
 
 
