@@ -8,7 +8,16 @@ import uuid
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Numeric, String, func
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.database import Base
@@ -80,6 +89,12 @@ class Product(Base):
         default=0,
         comment="Current inventory quantity",
     )
+    reserved_quantity: Mapped[int] = mapped_column(
+        nullable=False,
+        default=0,
+        server_default="0",
+        comment="Stock quantity reserved for pending orders",
+    )
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         default=True,
@@ -103,6 +118,22 @@ class Product(Base):
         onupdate=func.now(),
         nullable=False,
         comment="Timestamp when the product was last updated",
+    )
+
+    # Table-level constraints
+    __table_args__ = (
+        CheckConstraint(
+            "stock >= 0",
+            name="chk_product_stock_non_negative",
+        ),
+        CheckConstraint(
+            "reserved_quantity >= 0",
+            name="chk_product_reserved_quantity_non_negative",
+        ),
+        CheckConstraint(
+            "reserved_quantity <= stock",
+            name="chk_product_reserved_quantity_lte_stock",
+        ),
     )
 
     # Relationships
