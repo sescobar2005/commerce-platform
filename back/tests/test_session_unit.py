@@ -57,7 +57,7 @@ class TestSessionLifecycle:
         """Session should support close() without error."""
         session = SessionLocal()
         session.close()
-        assert session.is_active is False
+        assert not session.in_transaction()
 
     def test_session_close_is_idempotent(self):
         """Calling close() multiple times should not raise."""
@@ -87,7 +87,7 @@ class TestSessionCleanup:
             generator.close()
         except StopIteration:
             pass
-        assert session.is_active is False
+        assert not session.in_transaction()
 
     def test_get_db_closes_session_on_exception(self):
         """get_db should close the session even if an exception occurs."""
@@ -97,7 +97,7 @@ class TestSessionCleanup:
             generator.throw(RuntimeError("simulated failure"))
         except RuntimeError:
             pass
-        assert session.is_active is False
+        assert not session.in_transaction()
 
 
 class TestTransactionRollback:
@@ -140,7 +140,7 @@ class TestFastApiDependency:
             pass
         assert len(sessions) == 1
         assert isinstance(sessions[0], Session)
-        assert sessions[0].is_active is False
+        assert not sessions[0].in_transaction()
 
     def test_get_db_session_not_shared_between_calls(self):
         """Each call to get_db should produce a distinct session."""
