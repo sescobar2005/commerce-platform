@@ -1472,4 +1472,19 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Commit hash | `b777629` |
 | Observations | Repository pattern follows CartRepository conventions without commit()/rollback()/refresh() methods. OrderRepository.get_by_id eagerly loads items with products via joinedload. OrderRepository.get_by_user_id supports pagination (skip/limit) and user isolation. OrderRepository.get_by_user_and_idempotency_key scopes lookup by both user_id and idempotency_key. OrderItemRepository.get_by_order_id scopes by order_id. All persistence via self.db.add()/self.db.delete() only. |
 
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-25 |
+| Phase | Phase 2 (Database Stabilization) - Orders Unit 2b.1: OrderSubitemRepository |
+| Completed unit | Orders repository layer - OrderSubitemRepository |
+| Files affected | `back/src/core/orders/repositories.py` (modified), `back/src/core/orders/tests/test_order_subitem_repository_unit.py` (new) |
+| Repository class | OrderSubitemRepository |
+| OrderSubitemRepository methods | get_by_id(order_subitem_id), get_by_order_id(order_id), get_by_order_and_seller(order_id, seller_id), add(subitem), delete(subitem) |
+| Transaction rules | No commit()/rollback()/refresh() in repositories. Service layer owns transaction boundaries. |
+| Tests or checks | 7/7 order subitem repository tests pass; full suite: 419 passed, 0 failed, 9 skipped |
+| Commit hash | `1f9c221` |
+| Observations | Repository pattern follows CartRepository conventions without commit()/rollback()/refresh() methods. OrderSubitemRepository.get_by_id retrieves subitem by ID. OrderSubitemRepository.get_by_order_id supports querying all subitems for an order. OrderSubitemRepository.get_by_order_and_seller scopes lookup by both order_id and seller_id. All persistence via self.db.add()/self.db.delete() only. |
+
 
