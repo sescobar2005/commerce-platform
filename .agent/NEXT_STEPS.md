@@ -52,6 +52,7 @@ This unit builds on the completed authentication module, seller module, product 
 | Alembic and settings test corrections — A1–A6 in test_alembic_unit.py | Complete (commit `8e20eff`) |
 | Model test corrections — C1–C11 in test_models_unit.py | Complete (commit `f20d2e6`) |
 | Model default flush verification — C1–C11 post-flush tests | Complete (commit `dd9a580`) |
+| Session test corrections — D1–D4 in test_session_unit.py | Complete (commit `204b9b0`) |
 | Local PostgreSQL instance | Provisioned |
 | Development database (`plataforma_comercio_dev`) | Created and migrated |
 | `DATABASE_URL` configured in `back/.env` | Configured |

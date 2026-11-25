@@ -129,5 +129,22 @@ Database infrastructure (commits `79367fd`, `c6752fd`, `ba13a24`, `b586e55`, `19
 | Full file results | 24/24 passed |
 | Commit hash | `dd9a580` |
 
+### Session test corrections (commit `204b9b0`)
+
+| Field | Value |
+|-------|-------|
+| Fix | Corrected `back/tests/test_session_unit.py` for D1–D4 audit findings |
+| Root cause | `Session.is_active` in SQLAlchemy 2.0+ does not indicate whether `Session.close()` has been called — it remains `True` after close(). It reflects connection/transaction state, not closure state. |
+| Fix approach | Changed all 4 assertions from `session.is_active is False` to `not session.in_transaction()`. `in_transaction()` returns `False` after `close()` because the transaction is ended, which correctly verifies that cleanup terminates any active transaction. |
+| D1 | `TestSessionLifecycle::test_session_can_be_closed`: `assert session.is_active is False` → `assert not session.in_transaction()` |
+| D2 | `TestSessionCleanup::test_get_db_closes_session_after_exhaustion`: `assert session.is_active is False` → `assert not session.in_transaction()` |
+| D3 | `TestSessionCleanup::test_get_db_closes_session_on_exception`: `assert session.is_active is False` → `assert not session.in_transaction()` |
+| D4 | `TestFastApiDependency::test_get_db_yields_single_session`: `assert sessions[0].is_active is False` → `assert not sessions[0].in_transaction()` |
+| Files changed | `back/tests/test_session_unit.py` |
+| Focused test results | 4/4 passed |
+| Full file results | 16/16 passed |
+| Full suite results | 332 collected, 323 passed, 5 failed (all pre-existing database B1/B4-B7), 9 skipped |
+| Commit hash | `204b9b0` |
+
 
 

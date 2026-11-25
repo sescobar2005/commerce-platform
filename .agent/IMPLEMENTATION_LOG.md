@@ -1429,4 +1429,16 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Commit hash | `dd9a580` |
 | Observations | Added test_user_defaults_after_flush, test_seller_defaults_after_flush, test_store_defaults_after_flush, test_category_defaults_after_flush, test_product_defaults_after_flush. Each uses an isolated SQLite in-memory engine, creates required FK parent records, calls session.flush(), then asserts Python-side defaults are materialized. All four User boolean fields also declare server_default=sql.false() — flush() correctly populates both Python-side and server-side defaults. No session.refresh() needed. No production code changes. |
 
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-25 |
+| Phase | Phase 2 (Database Stabilization) - Session test corrections |
+| Completed unit | Corrected `back/tests/test_session_unit.py` for D1–D4 audit findings |
+| Files affected | `back/tests/test_session_unit.py` |
+| Tests or checks | 4 focused tests passed; full file: 16/16 passed |
+| Commit hash | `204b9b0` |
+| Observations | All 4 failing tests asserted `session.is_active is False` after `session.close()`. In SQLAlchemy 2.0+, `is_active` remains `True` after `close()` — it reflects connection/transaction state, not closure state. Changed all 4 assertions to `not session.in_transaction()`, which correctly verifies that cleanup terminates any active transaction. No production code changes needed — `get_db()` correctly calls `db.close()` in its finally block. Remaining 5 test failures are all pre-existing database engine test issues (B1, B4-B7). |
+
 
