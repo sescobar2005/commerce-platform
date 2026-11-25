@@ -1441,4 +1441,16 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Commit hash | `204b9b0` |
 | Observations | All 4 failing tests asserted `session.is_active is False` after `session.close()`. In SQLAlchemy 2.0+, `is_active` remains `True` after `close()` — it reflects connection/transaction state, not closure state. Changed all 4 assertions to `not session.in_transaction()`, which correctly verifies that cleanup terminates any active transaction. No production code changes needed — `get_db()` correctly calls `db.close()` in its finally block. Remaining 5 test failures are all pre-existing database engine test issues (B1, B4-B7). |
 
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-25 |
+| Phase | Phase 2 (Database Stabilization) - Database engine configuration test corrections |
+| Completed unit | Fixed `back/tests/test_database_unit.py` for B1 and B4–B7 audit findings |
+| Files affected | `back/tests/test_database_unit.py` |
+| Tests or checks | B1: 1/1 passed; B4–B7: 4/4 passed; full file: 16/16 passed; full suite: 332 collected, 328 passed, 0 failed, 9 skipped |
+| Commit hash | `f222067` |
+| Observations | B1: Added `monkeypatch.setattr(database.settings, 'DATABASE_URL', '')` to isolate settings from developer's `.env` file, matching the sibling test's isolation pattern. B4–B7: Changed `sqlite:///:memory:` to `postgresql+psycopg://user:pass@localhost:5432/test_db` in four pool configuration tests. Each now verifies `QueuePool` type via `isinstance(engine_instance.pool, QueuePool)` and asserts pool parameters (`pool_size=5`, `max_overflow=10`, `pool_timeout=30`, `pool_recycle=1800`). Each engine is disposed in `try/finally`. No production code changes needed — `create_db_engine()` correctly conditionally passes QueuePool-only parameters for non-SQLite URLs. |
+
 

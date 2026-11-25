@@ -146,5 +146,18 @@ Database infrastructure (commits `79367fd`, `c6752fd`, `ba13a24`, `b586e55`, `19
 | Full suite results | 332 collected, 323 passed, 5 failed (all pre-existing database B1/B4-B7), 9 skipped |
 | Commit hash | `204b9b0` |
 
+### Database engine configuration test corrections (commit `f222067`)
+
+| Field | Value |
+|-------|-------|
+| Fix | Corrected `back/tests/test_database_unit.py` for B1 and B4–B7 audit findings |
+| B1 | `test_create_db_engine_raises_value_error_when_url_is_empty`: Added `monkeypatch.setattr(database.settings, 'DATABASE_URL', '')` to isolate settings from developer's `.env` file, matching the sibling test's isolation pattern |
+| B4–B7 | Changed `sqlite:///:memory:` to `postgresql+psycopg://user:pass@localhost:5432/test_db` in four pool configuration tests. Each now verifies `QueuePool` type via `isinstance(engine_instance.pool, QueuePool)` and asserts pool parameters (`pool_size=5`, `max_overflow=10`, `pool_timeout=30`, `pool_recycle=1800`). Each engine is disposed in `try/finally`. |
+| Files changed | `back/tests/test_database_unit.py` |
+| Focused test results | B1: 1/1 passed; B4–B7: 4/4 passed |
+| Full file results | 16/16 passed |
+| Full suite results | 332 collected, 328 passed, 0 failed, 9 skipped |
+| Commit hash | `f222067` |
+
 
 
