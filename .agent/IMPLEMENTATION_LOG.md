@@ -1446,11 +1446,14 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Field | Value |
 |-------|-------|
 | Date | 2026-11-25 |
-| Phase | Phase 2 (Database Stabilization) - Database engine configuration test corrections |
-| Completed unit | Fixed `back/tests/test_database_unit.py` for B1 and B4–B7 audit findings |
-| Files affected | `back/tests/test_database_unit.py` |
-| Tests or checks | B1: 1/1 passed; B4–B7: 4/4 passed; full file: 16/16 passed; full suite: 332 collected, 328 passed, 0 failed, 9 skipped |
-| Commit hash | `f222067` |
-| Observations | B1: Added `monkeypatch.setattr(database.settings, 'DATABASE_URL', '')` to isolate settings from developer's `.env` file, matching the sibling test's isolation pattern. B4–B7: Changed `sqlite:///:memory:` to `postgresql+psycopg://user:pass@localhost:5432/test_db` in four pool configuration tests. Each now verifies `QueuePool` type via `isinstance(engine_instance.pool, QueuePool)` and asserts pool parameters (`pool_size=5`, `max_overflow=10`, `pool_timeout=30`, `pool_recycle=1800`). Each engine is disposed in `try/finally`. No production code changes needed — `create_db_engine()` correctly conditionally passes QueuePool-only parameters for non-SQLite URLs. |
+| Phase | Phase 2 (Database Stabilization) - Orders Unit 1: Database Migration + SQLAlchemy Models |
+| Completed unit | Orders database migration + SQLAlchemy models + model unit tests |
+| Files affected | `back/src/core/models/order.py` (new), `back/src/core/models/product.py` (modified), `back/src/core/models/__init__.py` (modified), `back/alembic/versions/8e7f6d5c4b3a_add_order_and_payment_tables.py` (new), `back/src/core/orders/tests/test_order_models_unit.py` (new), `back/src/core/orders/__init__.py` (new), `back/src/core/orders/tests/__init__.py` (new) |
+| Models created | Order, OrderItem, OrderSubitem, Payment, Commission |
+| Product changes | Added `reserved_quantity` Integer NOT NULL default 0; CHECK constraints: stock >= 0, reserved_quantity >= 0, reserved_quantity <= stock |
+| Test results | 70/70 order model tests pass; full suite: 398 passed, 0 failed, 9 skipped |
+| Commit hashes | `a0a3c81` (models), `495f520` (migration), `a2a43c6` (tests) |
+| Observations | Orders module database schema complete. Orders RESTRICT references users (preserves order history on user deletion). Order items snapshot product_name, product_sku, price. Order subitems have UNIQUE(order_id, seller_id). Payments and commissions have unique idempotency constraints. Product.reserved_quantity tracks stock reserved for pending orders. Available stock = stock - reserved_quantity. |
+| Migration | Revision `8e7f6d5c4b3a`, parent `7f3a1e2c4d8b`. Creates: orders, order_items, order_subitems, payments, commissions. Adds reserved_quantity to products with 3 CHECK constraints. Downgrade reverses all changes. Migration NOT yet applied to database. |
 
 

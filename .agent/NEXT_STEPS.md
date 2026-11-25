@@ -54,57 +54,29 @@ This unit builds on the completed authentication module, seller module, product 
 | Model default flush verification — C1–C11 post-flush tests | Complete (commit `dd9a580`) |
 | Session test corrections — D1–D4 in test_session_unit.py | Complete (commit `204b9b0`) |
 | Database engine configuration test corrections — B1, B4–B7 in test_database_unit.py | Complete (commit `f222067`) |
+| Orders Unit 1: Database Migration + SQLAlchemy Models | Complete (commits `a0a3c81`, `495f520`, `a2a43c6`) |
 | Local PostgreSQL instance | Provisioned |
 | Development database (`plataforma_comercio_dev`) | Created and migrated |
 | `DATABASE_URL` configured in `back/.env` | Configured |
 
-## Prerequisites (must be in place before implementation)
+## Orders Unit 1 — Completed
 
-- All database infrastructure complete and verified
-- All authentication modules complete and tested
-- JWT RSA key files configured at paths specified in `JWT_PRIVATE_KEY_PATH` and `JWT_PUBLIC_KEY_PATH`
+| Item | Status |
+|------|--------|
+| Order, OrderItem, OrderSubitem, Payment, Commission models | Complete (commit `a0a3c81`) |
+| Product.reserved_quantity field + CHECK constraints | Complete (commit `a0a3c81`) |
+| Alembic migration revision `8e7f6d5c4b3a` | Complete (commit `495f520`) |
+| Order model unit tests (70 tests) | Complete (commit `a2a43c6`) |
+| Full regression suite | 398 passed, 0 failed, 9 skipped |
+| Migration applied to database | Not yet applied (pending user authorization) |
 
-## Completion Criteria
+## Next Recommended Implementation Unit
 
-- [x] Seller registration endpoint (`POST /api/v1/sellers/register`)
-- [x] Seller store creation endpoint (`POST /api/v1/sellers/{seller_id}/stores`)
-- [x] Seller profile retrieval endpoint (`GET /api/v1/sellers/{seller_id}`)
-- [x] Seller unit and integration tests (10/10 unit tests pass)
-- [x] Product creation endpoint (`POST /api/v1/products`)
-- [x] Product unit tests (8/8 unit tests pass)
-- [x] Product retrieval endpoint (`GET /api/v1/products/{product_id}`)
-- [x] Product retrieval unit tests (3/3 unit tests pass)
-- [x] Product update endpoint (`PUT /api/v1/products/{product_id}`)
-- [x] Product update unit tests (8/8 unit tests pass)
-- [x] Product deletion endpoint (`DELETE /api/v1/products/{product_id}`)
-- [x] Product deletion unit tests (6/6 unit tests pass)
-- [x] Product listing endpoint (`GET /api/v1/products/`)
-- [x] Product listing unit tests (17/17 unit tests pass)
-- [x] Category creation endpoint (`POST /api/v1/categories/`)
-- [x] Category retrieval endpoint (`GET /api/v1/categories/{category_id}`)
-- [x] Category update endpoint (`PUT /api/v1/categories/{category_id}`)
-- [x] Category deletion endpoint (`DELETE /api/v1/categories/{category_id}`)
-- [x] Category listing endpoint (`GET /api/v1/categories/`)
-- [x] Category product listing endpoint (`GET /api/v1/categories/{category_id}/products`)
-- [x] Category admin authorization (POST/PUT/DELETE require is_admin, GET public)
-- [x] Category unit tests (37/37 unit tests pass)
-- [x] Cart module — Cart and CartItem models (commit `e9efb6d`)
-- [x] Cart module — model unit tests (20/20 unit tests pass)
-- [x] Cart creation endpoint (`POST /api/v1/carts/`) — commit `37ea458`
-- [x] Cart retrieval endpoint (`GET /api/v1/carts/{cart_id}`) — commit `37ea458`
-- [x] Cart update endpoint (`PUT /api/v1/carts/{cart_id}`) — commit `b64329a`
-- [x] Cart delete endpoint (`DELETE /api/v1/carts/{cart_id}`) — commit `b64329a`
-- [x] Cart update/delete unit tests (12/12 unit tests pass)
-- [x] Cart item add endpoint (`POST /api/v1/carts/{cart_id}/items`) — commit `d16c02d`
-- [x] Cart item update endpoint (`PUT /api/v1/carts/{cart_id}/items/{item_id}`) — commit `d16c02d`
-- [x] Cart item remove endpoint (`DELETE /api/v1/carts/{cart_id}/items/{item_id}`) — commit `d16c02d`
-- [x] Cart item unit tests (21/21 unit tests pass)
+**Orders Unit 2: Order Services and Repository**
 
-## Authorization Required
-
-**The user must explicitly approve this implementation task before work begins.** No code will be written until authorization is given.
-
-## Subsequent Units
-
-1. **Cart module remaining endpoints** (cart-module): POST /{cart_id}/validate, POST /{cart_id}/merge/{guest_cart_id}
-2. **Order module** (order-module): Orders, sub-orders, payments
+Create order service layer (`back/src/core/orders/services.py`) and order repository layer (`back/src/core/orders/repositories.py`) following the cart module pattern:
+- Order creation from cart items
+- Order retrieval
+- Order status transitions
+- Seller sub-order grouping
+- Cart validation before order creation

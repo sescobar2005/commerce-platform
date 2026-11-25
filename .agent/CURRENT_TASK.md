@@ -159,5 +159,18 @@ Database infrastructure (commits `79367fd`, `c6752fd`, `ba13a24`, `b586e55`, `19
 | Full suite results | 332 collected, 328 passed, 0 failed, 9 skipped |
 | Commit hash | `f222067` |
 
+### Orders Unit 1: Database Migration + SQLAlchemy Models (commits `a0a3c81`, `495f520`, `a2a43c6`)
+
+| Field | Value |
+|-------|-------|
+| Completed unit | Orders database migration + SQLAlchemy models + model unit tests |
+| Files affected | `back/src/core/models/order.py` (new), `back/src/core/models/product.py` (modified), `back/src/core/models/__init__.py` (modified), `back/alembic/versions/8e7f6d5c4b3a_add_order_and_payment_tables.py` (new), `back/src/core/orders/tests/test_order_models_unit.py` (new), `back/src/core/orders/__init__.py` (new), `back/src/core/orders/tests/__init__.py` (new) |
+| Models created | Order, OrderItem, OrderSubitem, Payment, Commission |
+| Product changes | Added `reserved_quantity` Integer NOT NULL default 0; CHECK constraints: stock >= 0, reserved_quantity >= 0, reserved_quantity <= stock |
+| Test results | 70/70 order model tests pass; full suite: 398 passed, 0 failed, 9 skipped |
+| Commit hashes | `a0a3c81` (models), `495f520` (migration), `a2a43c6` (tests) |
+| Observations | Orders module database schema complete. Orders RESTRICT references users (preserves order history on user deletion). Order items snapshot product_name, product_sku, price. Order subitems have UNIQUE(order_id, seller_id). Payments and commissions have unique idempotency constraints. Product.reserved_quantity tracks stock reserved for pending orders. Available stock = stock - reserved_quantity. |
+| Migration | Revision `8e7f6d5c4b3a`, parent `7f3a1e2c4d8b`. Creates: orders, order_items, order_subitems, payments, commissions. Adds reserved_quantity to products with 3 CHECK constraints. Downgrade reverses all changes. Migration NOT yet applied to database. |
+| Last updated | 2026-11-25 |
 
 
