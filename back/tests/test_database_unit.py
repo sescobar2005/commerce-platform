@@ -17,8 +17,11 @@ from src.core.database import Base, create_db_engine, engine
 class TestDatabaseEngineCreation:
     """Tests for create_db_engine function without live database."""
 
-    def test_create_db_engine_raises_value_error_when_url_is_empty(self):
+    def test_create_db_engine_raises_value_error_when_url_is_empty(self, monkeypatch):
         """create_db_engine should raise ValueError when no URL is provided."""
+        from src.core import database
+
+        monkeypatch.setattr(database.settings, 'DATABASE_URL', '')
         with pytest.raises(ValueError, match="DATABASE_URL is not configured"):
             create_db_engine("")
 
@@ -34,23 +37,43 @@ class TestDatabaseEngineCreation:
 
     def test_create_db_engine_has_pool_size_configured(self):
         """Engine should have pool_size of 5."""
-        engine_instance = create_db_engine("sqlite:///:memory:")
-        assert engine_instance.pool.size() == 5
+        engine_instance = create_db_engine("postgresql+psycopg://user:pass@localhost:5432/test_db")
+        try:
+            from sqlalchemy.pool import QueuePool
+            assert isinstance(engine_instance.pool, QueuePool)
+            assert engine_instance.pool.size() == 5
+        finally:
+            engine_instance.dispose()
 
     def test_create_db_engine_has_max_overflow_configured(self):
         """Engine should have max_overflow of 10."""
-        engine_instance = create_db_engine("sqlite:///:memory:")
-        assert engine_instance.pool._max_overflow == 10
+        engine_instance = create_db_engine("postgresql+psycopg://user:pass@localhost:5432/test_db")
+        try:
+            from sqlalchemy.pool import QueuePool
+            assert isinstance(engine_instance.pool, QueuePool)
+            assert engine_instance.pool._max_overflow == 10
+        finally:
+            engine_instance.dispose()
 
     def test_create_db_engine_has_pool_timeout_configured(self):
         """Engine should have pool_timeout of 30 seconds."""
-        engine_instance = create_db_engine("sqlite:///:memory:")
-        assert engine_instance.pool._timeout == 30
+        engine_instance = create_db_engine("postgresql+psycopg://user:pass@localhost:5432/test_db")
+        try:
+            from sqlalchemy.pool import QueuePool
+            assert isinstance(engine_instance.pool, QueuePool)
+            assert engine_instance.pool._timeout == 30
+        finally:
+            engine_instance.dispose()
 
     def test_create_db_engine_has_pool_recycle_configured(self):
         """Engine should have pool_recycle of 1800 seconds."""
-        engine_instance = create_db_engine("sqlite:///:memory:")
-        assert engine_instance.pool._recycle == 1800
+        engine_instance = create_db_engine("postgresql+psycopg://user:pass@localhost:5432/test_db")
+        try:
+            from sqlalchemy.pool import QueuePool
+            assert isinstance(engine_instance.pool, QueuePool)
+            assert engine_instance.pool._recycle == 1800
+        finally:
+            engine_instance.dispose()
 
 
 class TestDatabaseBase:
