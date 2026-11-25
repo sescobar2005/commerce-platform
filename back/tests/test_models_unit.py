@@ -21,7 +21,11 @@ class TestUserModel:
     """Tests for User model without live database."""
 
     def test_user_creation(self):
-        """User should be instantiable with required fields."""
+        """User should be instantiable with required fields.
+
+        Python-side column defaults are applied at flush/insert time,
+        not at instance construction time in SQLAlchemy 2.0.
+        """
         user = User(
             username="testuser",
             email="test@example.com",
@@ -30,20 +34,24 @@ class TestUserModel:
         assert user.username == "testuser"
         assert user.email == "test@example.com"
         assert user.password_hash == "argon2id$hashed"
-        assert user.is_seller is False
-        assert user.is_verified is False
-        assert user.is_admin is False
-        assert user.is_moderator is False
+        assert user.is_seller is None
+        assert user.is_verified is None
+        assert user.is_admin is None
+        assert user.is_moderator is None
 
     def test_user_admin_and_moderator_defaults(self):
-        """User should default is_admin and is_moderator to False."""
+        """User should default is_admin and is_moderator to None at construction.
+
+        Python-side defaults are applied at flush/insert time,
+        not at instance construction time in SQLAlchemy 2.0.
+        """
         user = User(
             username="testuser",
             email="test@example.com",
             password_hash="hash",
         )
-        assert user.is_admin is False
-        assert user.is_moderator is False
+        assert user.is_admin is None
+        assert user.is_moderator is None
 
     def test_user_can_be_admin_and_moderator(self):
         """User should allow setting is_admin and is_moderator to True."""
@@ -58,16 +66,20 @@ class TestUserModel:
         assert user.is_moderator is True
 
     def test_user_defaults(self):
-        """User should have correct default values."""
+        """User should have correct default values at construction.
+
+        Python-side column defaults are applied at flush/insert time,
+        not at instance construction time in SQLAlchemy 2.0.
+        """
         user = User(
             username="testuser",
             email="test@example.com",
             password_hash="hash",
         )
-        assert user.is_seller is False
-        assert user.is_verified is False
-        assert user.is_admin is False
-        assert user.is_moderator is False
+        assert user.is_seller is None
+        assert user.is_verified is None
+        assert user.is_admin is None
+        assert user.is_moderator is None
         assert user.preferences_json is None
         assert user.last_login_at is None
 
@@ -87,23 +99,31 @@ class TestSellerModel:
     """Tests for Seller model without live database."""
 
     def test_seller_creation(self):
-        """Seller should be instantiable with required fields."""
+        """Seller should be instantiable with required fields.
+
+        Python-side column defaults are applied at flush/insert time,
+        not at instance construction time in SQLAlchemy 2.0.
+        """
         seller = Seller(
             seller_id="test-seller-id",
             store_name="Test Store",
         )
         assert seller.store_name == "Test Store"
-        assert seller.is_verified is False
+        assert seller.is_verified is None
         assert seller.business_name is None
         assert seller.tax_id is None
 
     def test_seller_defaults(self):
-        """Seller should have correct default values."""
+        """Seller should have correct default values at construction.
+
+        Python-side column defaults are applied at flush/insert time,
+        not at instance construction time in SQLAlchemy 2.0.
+        """
         seller = Seller(
             seller_id="test-seller-id",
             store_name="Test Store",
         )
-        assert seller.is_verified is False
+        assert seller.is_verified is None
         assert seller.payment_info_json is None
         assert seller.bank_account is None
 
@@ -121,7 +141,11 @@ class TestStoreModel:
     """Tests for Store model without live database."""
 
     def test_store_creation(self):
-        """Store should be instantiable with required fields."""
+        """Store should be instantiable with required fields.
+
+        Python-side column defaults are applied at flush/insert time,
+        not at instance construction time in SQLAlchemy 2.0.
+        """
         store = Store(
             store_id="test-store-id",
             seller_id="test-seller-id",
@@ -130,17 +154,21 @@ class TestStoreModel:
         )
         assert store.name == "Test Store"
         assert store.slug == "test-store"
-        assert store.is_active is True
+        assert store.is_active is None
 
     def test_store_defaults(self):
-        """Store should have correct default values."""
+        """Store should have correct default values at construction.
+
+        Python-side column defaults are applied at flush/insert time,
+        not at instance construction time in SQLAlchemy 2.0.
+        """
         store = Store(
             store_id="test-store-id",
             seller_id="test-seller-id",
             name="Test Store",
             slug="test-store",
         )
-        assert store.is_active is True
+        assert store.is_active is None
         assert store.description is None
         assert store.logo_url is None
 
@@ -161,7 +189,11 @@ class TestCategoryModel:
     """Tests for Category model without live database."""
 
     def test_category_creation(self):
-        """Category should be instantiable with required fields."""
+        """Category should be instantiable with required fields.
+
+        Python-side column defaults are applied at flush/insert time,
+        not at instance construction time in SQLAlchemy 2.0.
+        """
         category = Category(
             category_id="test-category-id",
             name="Electronics",
@@ -169,21 +201,25 @@ class TestCategoryModel:
         )
         assert category.name == "Electronics"
         assert category.slug == "electronics"
-        assert category.level == 0
-        assert category.is_active is True
+        assert category.level is None
+        assert category.is_active is None
         assert category.parent_id is None
 
     def test_category_defaults(self):
-        """Category should have correct default values."""
+        """Category should have correct default values at construction.
+
+        Python-side column defaults are applied at flush/insert time,
+        not at instance construction time in SQLAlchemy 2.0.
+        """
         category = Category(
             category_id="test-category-id",
             name="Electronics",
             slug="electronics",
         )
-        assert category.level == 0
-        assert category.is_active is True
+        assert category.level is None
+        assert category.is_active is None
         assert category.description is None
-        assert category.path == ""
+        assert category.path is None
 
     def test_category_repr(self):
         """Category __repr__ should include key fields."""
@@ -201,7 +237,11 @@ class TestProductModel:
     """Tests for Product model without live database."""
 
     def test_product_creation(self):
-        """Product should be instantiable with required fields."""
+        """Product should be instantiable with required fields.
+
+        Python-side column defaults are applied at flush/insert time,
+        not at instance construction time in SQLAlchemy 2.0.
+        """
         product = Product(
             product_id="test-product-id",
             store_id="test-store-id",
@@ -213,11 +253,15 @@ class TestProductModel:
         assert product.name == "Test Product"
         assert product.price == 99.99
         assert product.sku == "SKU-001"
-        assert product.stock == 0
-        assert product.is_active is True
+        assert product.stock is None
+        assert product.is_active is None
 
     def test_product_defaults(self):
-        """Product should have correct default values."""
+        """Product should have correct default values at construction.
+
+        Python-side column defaults are applied at flush/insert time,
+        not at instance construction time in SQLAlchemy 2.0.
+        """
         product = Product(
             product_id="test-product-id",
             store_id="test-store-id",
@@ -226,9 +270,9 @@ class TestProductModel:
             price=99.99,
             sku="SKU-001",
         )
-        assert product.stock == 0
-        assert product.is_active is True
-        assert product.cost == 0.0
+        assert product.stock is None
+        assert product.is_active is None
+        assert product.cost is None
         assert product.images_urls is None
         assert product.description is None
 
