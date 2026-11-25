@@ -83,6 +83,34 @@ class TestUserModel:
         assert user.preferences_json is None
         assert user.last_login_at is None
 
+    def test_user_defaults_after_flush(self):
+        """Python-side defaults should be applied after flush.
+
+        SQLAlchemy 2.0 applies Python-side column defaults
+        (default=) during flush/insert, not at construction time.
+        All four User boolean fields also declare
+        server_default=sql.false() as a database-level fallback.
+        """
+        test_engine = create_engine("sqlite:///:memory:")
+        Base.metadata.create_all(test_engine)
+        session = Session(test_engine)
+        try:
+            user = User(
+                username="flushuser",
+                email="flush@example.com",
+                password_hash="argon2id$hashed",
+            )
+            session.add(user)
+            session.flush()
+
+            assert user.is_seller is False
+            assert user.is_verified is False
+            assert user.is_admin is False
+            assert user.is_moderator is False
+        finally:
+            session.close()
+            test_engine.dispose()
+
     def test_user_repr(self):
         """User __repr__ should include key fields."""
         user = User(
@@ -126,6 +154,38 @@ class TestSellerModel:
         assert seller.is_verified is None
         assert seller.payment_info_json is None
         assert seller.bank_account is None
+
+    def test_seller_defaults_after_flush(self):
+        """Python-side defaults should be applied after flush.
+
+        SQLAlchemy 2.0 applies Python-side column defaults
+        (default=) during flush/insert, not at construction time.
+        Seller.user_id is a foreign key to users.user_id, so a User
+        record is created first to satisfy the constraint.
+        """
+        test_engine = create_engine("sqlite:///:memory:")
+        Base.metadata.create_all(test_engine)
+        session = Session(test_engine)
+        try:
+            user = User(
+                username="selleruser",
+                email="seller@example.com",
+                password_hash="argon2id$hashed",
+            )
+            session.add(user)
+            session.flush()
+
+            seller = Seller(
+                seller_id=user.user_id,
+                store_name="Flush Store",
+            )
+            session.add(seller)
+            session.flush()
+
+            assert seller.is_verified is False
+        finally:
+            session.close()
+            test_engine.dispose()
 
     def test_seller_repr(self):
         """Seller __repr__ should include key fields."""
@@ -171,6 +231,48 @@ class TestStoreModel:
         assert store.is_active is None
         assert store.description is None
         assert store.logo_url is None
+
+    def test_store_defaults_after_flush(self):
+        """Python-side defaults should be applied after flush.
+
+        SQLAlchemy 2.0 applies Python-side column defaults
+        (default=) during flush/insert, not at construction time.
+        Store.seller_id is a foreign key to sellers.seller_id, so a
+        User and Seller record are created first to satisfy the
+        constraint.
+        """
+        test_engine = create_engine("sqlite:///:memory:")
+        Base.metadata.create_all(test_engine)
+        session = Session(test_engine)
+        try:
+            user = User(
+                username="storeuser",
+                email="store@example.com",
+                password_hash="argon2id$hashed",
+            )
+            session.add(user)
+            session.flush()
+
+            seller = Seller(
+                seller_id=user.user_id,
+                store_name="Store Owner",
+            )
+            session.add(seller)
+            session.flush()
+
+            store = Store(
+                store_id="flush-store-id",
+                seller_id=seller.seller_id,
+                name="Flush Store",
+                slug="flush-store",
+            )
+            session.add(store)
+            session.flush()
+
+            assert store.is_active is True
+        finally:
+            session.close()
+            test_engine.dispose()
 
     def test_store_repr(self):
         """Store __repr__ should include key fields."""
@@ -220,6 +322,33 @@ class TestCategoryModel:
         assert category.is_active is None
         assert category.description is None
         assert category.path is None
+
+    def test_category_defaults_after_flush(self):
+        """Python-side defaults should be applied after flush.
+
+        SQLAlchemy 2.0 applies Python-side column defaults
+        (default=) during flush/insert, not at construction time.
+        Category has no required foreign keys, so it can be created
+        directly.
+        """
+        test_engine = create_engine("sqlite:///:memory:")
+        Base.metadata.create_all(test_engine)
+        session = Session(test_engine)
+        try:
+            category = Category(
+                category_id="flush-category-id",
+                name="Flush Category",
+                slug="flush-category",
+            )
+            session.add(category)
+            session.flush()
+
+            assert category.level == 0
+            assert category.path == ""
+            assert category.is_active is True
+        finally:
+            session.close()
+            test_engine.dispose()
 
     def test_category_repr(self):
         """Category __repr__ should include key fields."""
@@ -275,6 +404,69 @@ class TestProductModel:
         assert product.cost is None
         assert product.images_urls is None
         assert product.description is None
+
+    def test_product_defaults_after_flush(self):
+        """Python-side defaults should be applied after flush.
+
+        SQLAlchemy 2.0 applies Python-side column defaults
+        (default=) during flush/insert, not at construction time.
+        Product.store_id and Product.category_id are foreign keys,
+        so a User, Seller, Store, and Category are created first to
+        satisfy both constraints.
+        """
+        test_engine = create_engine("sqlite:///:memory:")
+        Base.metadata.create_all(test_engine)
+        session = Session(test_engine)
+        try:
+            user = User(
+                username="productuser",
+                email="product@example.com",
+                password_hash="argon2id$hashed",
+            )
+            session.add(user)
+            session.flush()
+
+            seller = Seller(
+                seller_id=user.user_id,
+                store_name="Product Owner",
+            )
+            session.add(seller)
+            session.flush()
+
+            store = Store(
+                store_id="flush-store-id",
+                seller_id=seller.seller_id,
+                name="Flush Store",
+                slug="flush-store",
+            )
+            session.add(store)
+            session.flush()
+
+            category = Category(
+                category_id="flush-category-id",
+                name="Flush Category",
+                slug="flush-category",
+            )
+            session.add(category)
+            session.flush()
+
+            product = Product(
+                product_id="flush-product-id",
+                store_id=store.store_id,
+                category_id=category.category_id,
+                name="Flush Product",
+                price=99.99,
+                sku="SKU-FLUSH",
+            )
+            session.add(product)
+            session.flush()
+
+            assert product.stock == 0
+            assert product.is_active is True
+            assert product.cost == 0.0
+        finally:
+            session.close()
+            test_engine.dispose()
 
     def test_product_repr(self):
         """Product __repr__ should include key fields."""
