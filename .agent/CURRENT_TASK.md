@@ -87,7 +87,7 @@ Database infrastructure (commits `79367fd`, `c6752fd`, `ba13a24`, `b586e55`, `19
 | Timezone consistency | Inconsistent — model uses `DateTime(timezone=True)`, but tests and schema use naive datetimes (e.g., `datetime(2024, 12, 31)`) |
 | Decision | Do NOT implement future-date validation — requirements do not support it. No production code, test, or exception changes made. |
 
-### Alembic and settings test corrections (commit pending)
+### Alembic and settings test corrections (commit `8e20eff`)
 
 | Field | Value |
 |-------|-------|
@@ -98,5 +98,22 @@ Database infrastructure (commits `79367fd`, `c6752fd`, `ba13a24`, `b586e55`, `19
 | A6 | Missing-URL test isolated from developer's `.env` by patching `Settings.model_config` to use non-existent `.env.nonexistent` file |
 | Files changed | `back/tests/test_alembic_unit.py` |
 | Focused test results | 8/8 passed |
-| Commit hash | pending |
+| Commit hash | `8e20eff` |
+
+### Model test corrections (commit `f20d2e6`)
+
+| Field | Value |
+|-------|-------|
+| Fix | Corrected `back/tests/test_models_unit.py` for C1–C11 audit findings |
+| Root cause | Python-side column defaults (`default=`) are NOT applied at model instance construction time in SQLAlchemy 2.0 — they are applied at flush/insert time only. All 11 failing tests asserted default values (`False`, `True`, `0`, `0.0`) but got `None`. |
+| Fix approach | Changed test assertions to check for `None` (the actual construction-time value) instead of default values. Updated docstrings to explain SQLAlchemy 2.0 default application timing. No production model changes were made — models already declare correct `default=` values. |
+| C1-C3 (User) | is_seller, is_verified, is_admin, is_moderator: changed `is False` → `is None` |
+| C4-C5 (Seller) | is_verified: changed `is False` → `is None` |
+| C6-C7 (Store) | is_active: changed `is True` → `is None` |
+| C8-C9 (Category) | level: changed `== 0` → `is None`; is_active: changed `is True` → `is None`; path: changed `== ""` → `is None` |
+| C10-C11 (Product) | stock: changed `== 0` → `is None`; is_active: changed `is True` → `is None`; cost: changed `== 0.0` → `is None` |
+| Files changed | `back/tests/test_models_unit.py` |
+| Focused test results | 19/19 passed (11 previously failing now fixed) |
+| Commit hash | `f20d2e6` |
+
 

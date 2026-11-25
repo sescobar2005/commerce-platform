@@ -1402,7 +1402,19 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Completed unit | Corrected `back/tests/test_alembic_unit.py` for A1–A6 audit findings |
 | Files affected | `back/tests/test_alembic_unit.py` |
 | Tests or checks | 8/8 passed: alembic config loading (3), metadata integration (2), settings configuration (3) |
-| Commit hash | pending |
+| Commit hash | `8e20eff` |
 | Observations | A1–A3: Alembic paths changed from `back/alembic.ini`/`back/alembic` to `alembic.ini`/`alembic` for pytest running from `back/` directory. A4: Metadata assertion changed from `len(Base.metadata.tables) == 0` to `len(Base.metadata.tables) > 0` with expected table subset; added `from src.core import models` import. A5: `hasattr(Settings, "DATABASE_URL")` changed to `"DATABASE_URL" in Settings.model_fields` for Pydantic v2. A6: Missing-URL test isolated from developer's `.env` by patching `Settings.model_config` to use non-existent `.env.nonexistent` file. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-25 |
+| Phase | Phase 2 (Database Stabilization) - Model test corrections |
+| Completed unit | Fixed `back/tests/test_models_unit.py` for C1–C11 audit findings |
+| Files affected | `back/tests/test_models_unit.py` |
+| Tests or checks | 19/19 passed (11 previously failing now fixed) |
+| Commit hash | `f20d2e6` |
+| Observations | Root cause: Python-side column defaults (`default=`) are NOT applied at model instance construction time in SQLAlchemy 2.0 — they are applied at flush/insert time only. All 11 failing tests asserted default values (`False`, `True`, `0`, `0.0`) but got `None`. Changed test assertions to check for `None` (the actual construction-time value). Updated docstrings to explain SQLAlchemy 2.0 default application timing. No production model changes were made — models already declare correct `default=` values per the task restriction ("Do not modify production models merely to satisfy incorrect test assumptions"). |
 
 
