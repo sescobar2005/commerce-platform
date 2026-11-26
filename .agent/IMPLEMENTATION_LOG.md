@@ -1575,5 +1575,26 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Unchanged methods | get_cart() — normal read, no lock |
 | Transaction rules | No commit/rollback/refresh in repositories. Lock held until service-layer commit/rollback. Lock ordering: cart row first. |
 | Tests or checks | 12/12 new locking tests pass; 9 existing cart item tests pass (mock updates for with_for_update); full suite: 505 passed, 0 failed, 9 skipped |
-| Commit hash | Pending |
+| Commit hash | `0ecb5d4` |
 | Observations | SQLite does not provide PostgreSQL row-level locking semantics — tests verify query method calls, not actual concurrency safety. No migrations added. No API contract changes. Existing cart item unit test mocks updated to include with_for_update() in the query chain.
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-26 |
+| Phase | Phase 2 (Database Stabilization) - Orders Unit 3a.4: Orders Exceptions and Fingerprint Utility |
+| Completed unit | Orders-specific exception hierarchy + deterministic cart fingerprint utility |
+| Files affected | `back/src/core/orders/exceptions.py` (new), `back/src/core/orders/fingerprint.py` (new), `back/src/core/orders/tests/test_order_exceptions_and_fingerprint_unit.py` (new) |
+| Exception classes | OrderError(OrderError base), OrderNotFoundError, OrderOwnershipError, OrderItemNotFoundError, ProductNotFoundError, ProductInactiveError, InsufficientStockError, IdempotencyConflictError |
+| IdempotencyConflictError | Distinguishable from other Order errors for HTTP 409 mapping in future router |
+| Fingerprint utility | generate_cart_fingerprint(cart: Cart) -> str — SHA-256 of canonical cart representation |
+| Canonical input | cart_id + items sorted by product_id (product_id, quantity, price_at_time as normalized Decimal string) |
+| Decimal handling | Quantized to 2 decimal places via Decimal.quantize; never float; str() serialization |
+| JSON serialization | sort_keys=True, separators=(",", ":"), UTF-8 encoded |
+| Output | 64-character lowercase SHA-256 hex digest |
+| Invalid input | Non-Decimal monetary values raise ValueError |
+| Transaction rules | N/A — no database operations in exceptions or fingerprint utility |
+| Tests or checks | 28/28 exception + fingerprint tests pass; full suite: 533 passed, 0 failed, 9 skipped |
+| Commit hash | Pending |
+| Observations | Cart exceptions NOT reused; Orders exceptions are independent. No routers, migrations, or OrderService implemented in this unit. Fingerprint verified deterministic under item reordering.

@@ -21,7 +21,7 @@
 - Added focused unit tests (`test_store_repository_unit.py`): 10/10 pass.
 - Full suite: 493 passed, 0 failed, 9 skipped.
 
-## Orders Unit 3a.3 — Cart concurrency coordination — Complete (commit pending)
+## Orders Unit 3a.3 — Cart concurrency coordination — Complete (commit `0ecb5d4`)
 
 **Cart row locking — Complete.**
 - Added `CartRepository.get_by_id_for_update(cart_id)` — queries Cart with `SELECT ... FOR UPDATE` and joinedload for items+products.
@@ -36,10 +36,29 @@
 - Full suite: 505 passed, 0 failed, 9 skipped.
 - PostgreSQL row-lock semantics NOT verified (SQLite only); documented limitation.
 
-**Next: Unit 3a.4 — Orders exceptions and fingerprint utility**
-- Orders-specific exception hierarchy (idempotency conflict mapped to HTTP 409).
-- Deterministic Decimal normalization + SHA-256 fingerprint utility.
-- Tests for reordered items, changed quantities, changed prices, different cart IDs.
+## Orders Unit 3a.4 — Orders exceptions and fingerprint utility — Complete (commit pending)
+
+**Orders exceptions (`back/src/core/orders/exceptions.py`) — Complete.**
+- `OrderError(Exception)` — base.
+- `OrderNotFoundError(OrderError)` — takes order_id.
+- `OrderOwnershipError(OrderError)` — takes order_id, user_id.
+- `OrderItemNotFoundError(OrderError)` — takes order_item_id.
+- `ProductNotFoundError(OrderError)` — takes product_id.
+- `ProductInactiveError(OrderError)` — takes product_id.
+- `InsufficientStockError(OrderError)` — takes product_id, requested, available.
+- `IdempotencyConflictError(OrderError)` — takes message; distinguishable for HTTP 409 mapping.
+- Cart exceptions NOT reused; independent of HTTP framework.
+
+**Fingerprint utility (`back/src/core/orders/fingerprint.py`) — Complete.**
+- `generate_cart_fingerprint(cart: Cart) -> str` — SHA-256 of canonical cart representation.
+- Canonical input: cart_id + items sorted by product_id (product_id, quantity, price_at_time).
+- Decimal normalized to fixed 2-place string via quantize; never float.
+- JSON with sort_keys=True, compact separators; UTF-8 encoded.
+- 64-char lowercase hex digest.
+- Rejects non-Decimal monetary values.
+- Independent of DB sessions and HTTP requests.
+- Added focused unit tests (`test_order_exceptions_and_fingerprint_unit.py`): 28/28 pass.
+- Full suite: 533 passed, 0 failed, 9 skipped.
 
 **Next: Unit 3a.5 — OrderService creation flow**
 - Implement `OrderService.create_order_from_cart()` only, per approved transaction sequence.
