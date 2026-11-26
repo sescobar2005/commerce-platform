@@ -76,7 +76,7 @@ class OrderRepository:
         return (
             self.db.query(Order)
             .filter(Order.user_id == user_id)
-            .order_by(Order.created_at.desc())
+            .order_by(Order.created_at.desc(), Order.order_id.desc())
             .offset(skip)
             .limit(limit)
             .all()
