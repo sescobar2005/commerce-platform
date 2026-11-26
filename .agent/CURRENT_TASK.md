@@ -4,9 +4,9 @@
 
 | Field | Value |
 |-------|-------|
-| Current phase | 1 (Fundamentals) → Phase 2 (Database Stabilization) |
-| Current task | Cart and CartItem database models + migration |
-| Objective | Implement Cart and CartItem SQLAlchemy 2.0 database models with relationships and constraints, create Alembic migration, fix .gitignore for migration tracking |
+| Current phase | Phase 2 (Database Stabilization) → Orders Unit 3a |
+| Current task | Orders Unit 3a.1 — OrderService Foundation and Order Creation |
+| Objective | Implement OrderService creation flow for the Orders module, starting with database migration (source_cart_id, request_fingerprint columns), StoreRepository, cart locking, exceptions/fingerprint utility, and OrderService.create_order_from_cart() |
 | Scope | `back/src/core/models/cart.py`, `back/src/core/models/__init__.py`, `back/alembic/env.py`, `back/alembic/versions/7f3a1e2c4d8b_add_cart_and_cart_item_tables.py`, `back/.gitignore`, `back/tests/test_cart_models_unit.py` |
 | Files involved | `back/src/main.py`, `back/src/core/cart/__init__.py`, `back/src/core/cart/schemas.py`, `back/src/core/cart/router.py`, `back/src/core/models/cart.py`, `back/src/core/models/__init__.py`, `back/alembic/env.py`, `back/alembic/versions/7f3a1e2c4d8b_add_cart_and_cart_item_tables.py`, `back/.gitignore`, `back/tests/test_cart_models_unit.py`, `back/tests/test_cart_unit.py`, `back/tests/test_cart_item_unit.py`, `back/tests/test_cart_update_delete_unit.py` |
 | Completed units | All auth endpoints, all product endpoints, all category endpoints, all cart endpoints (create, retrieve, update, delete, add item, update item, remove item), Cart models (Cart, CartItem), Cart migrations, FastAPI entry point, Config fix (ALGORITHM optional), Alembic .gitignore fix, Cart/CartItem migration |

@@ -1531,3 +1531,17 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Tests or checks | 22/22 product inventory repository tests pass; full suite: 435 passed, 0 failed, 9 skipped |
 | Commit hash | `064749f` |
 | Observations | Follows CartRepository conventions without commit()/rollback()/refresh() methods. lock_products uses SELECT FOR UPDATE with ascending product_id ordering and deduplication. Available stock = stock - reserved_quantity. reserve_quantity increases reserved_quantity. release_reservation decreases reserved_quantity (never negative). confirm_consumption decreases both stock and reserved_quantity. Errors raised for missing products, invalid quantities, insufficient stock, insufficient reserved_quantity. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-26 |
+| Phase | Phase 2 (Database Stabilization) - Orders Unit 3a.1: OrderService Foundation and Order Creation |
+| Completed unit | Orders model migration + source_cart_id and request_fingerprint columns |
+| Files affected | `back/src/core/models/order.py` (modified), `back/alembic/versions/0e9ed90dea55_add_source_cart_id_and_request_.py` (new), `back/src/core/orders/tests/test_order_source_cart_fingerprint_unit.py` (new), `back/src/core/orders/tests/test_order_migration_unit.py` (new) |
+| Model changes | Added `source_cart_id: String(36)` nullable, no FK to carts; Added `request_fingerprint: String(64)` nullable, no FK |
+| Migration | Revision `0e9ed90dea55`, parent `8e7f6d5c4b3a`. Adds both nullable columns to `orders` table. Downgrade drops both columns. Migration created but NOT applied to any database. |
+| Tests or checks | 14/14 model column tests pass; 12/12 migration tests pass; full suite: 483 passed, 0 failed, 9 skipped |
+| Commit hash | Pending |
+| Observations | `source_cart_id` must NOT have a foreign key to `carts` (approved decision). No indexes added (not justified by query patterns yet). Alembic `upgrade head --sql` verified valid SQL generating only ALTER TABLE ADD COLUMN for both columns. Cart remains intact after order creation (to be enforced in OrderService Unit 3a.5).

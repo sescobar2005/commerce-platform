@@ -76,6 +76,16 @@ class Order(Base):
         index=True,
         comment="Client-provided idempotency key for duplicate request prevention",
     )
+    source_cart_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        nullable=True,
+        comment="Source cart identifier for idempotency retry scenarios",
+    )
+    request_fingerprint: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        nullable=True,
+        comment="SHA-256 fingerprint of canonical cart representation for idempotency",
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
