@@ -511,6 +511,14 @@ class ProductInventoryRepository:
         if quantity <= 0:
             raise ValueError("Quantity must be positive")
 
+        if product.reserved_quantity + quantity > product.stock:
+            raise ValueError(
+                f"Cannot reserve {quantity} units for product "
+                f"{product.product_id}: would exceed stock "
+                f"{product.stock} (already reserved "
+                f"{product.reserved_quantity})"
+            )
+
         product.reserved_quantity += quantity
 
     def release_reservation(self, product: Product, quantity: int) -> None:

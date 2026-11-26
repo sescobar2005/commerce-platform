@@ -313,6 +313,152 @@ class TestProductInventoryRepository:
 
         session.close()
 
+    def test_reserve_quantity_within_stock_limit(self):
+        """reserve_quantity should succeed when reservation stays within stock."""
+        session = _create_session()
+        repo = ProductInventoryRepository(session)
+
+        p1 = Product(
+            product_id="prod-1",
+            store_id="store-1",
+            category_id="cat-1",
+            name="Product 1",
+            price=10.00,
+            sku="SKU-001",
+            stock=100,
+            reserved_quantity=0,
+        )
+        session.add(p1)
+        session.flush()
+
+        repo.reserve_quantity(p1, 30)
+        assert p1.reserved_quantity == 30
+
+        session.close()
+
+    def test_reserve_quantity_exactly_at_stock_limit(self):
+        """reserve_quantity should succeed when reservation exactly equals stock."""
+        session = _create_session()
+        repo = ProductInventoryRepository(session)
+
+        p1 = Product(
+            product_id="prod-1",
+            store_id="store-1",
+            category_id="cat-1",
+            name="Product 1",
+            price=10.00,
+            sku="SKU-001",
+            stock=50,
+            reserved_quantity=0,
+        )
+        session.add(p1)
+        session.flush()
+
+        repo.reserve_quantity(p1, 50)
+        assert p1.reserved_quantity == 50
+
+        session.close()
+
+    def test_reserve_quantity_exceeding_stock_limit(self):
+        """reserve_quantity should raise ValueError when reservation exceeds stock."""
+        session = _create_session()
+        repo = ProductInventoryRepository(session)
+
+        p1 = Product(
+            product_id="prod-1",
+            store_id="store-1",
+            category_id="cat-1",
+            name="Product 1",
+            price=10.00,
+            sku="SKU-001",
+            stock=50,
+            reserved_quantity=0,
+        )
+        session.add(p1)
+        session.flush()
+
+        with pytest.raises(ValueError, match="Cannot reserve"):
+            repo.reserve_quantity(p1, 51)
+
+        session.close()
+
+    def test_reserve_quantity_with_existing_reserved_stock(self):
+        """reserve_quantity should account for already-reserved quantity."""
+        session = _create_session()
+        repo = ProductInventoryRepository(session)
+
+        p1 = Product(
+            product_id="prod-1",
+            store_id="store-1",
+            category_id="cat-1",
+            name="Product 1",
+            price=10.00,
+            sku="SKU-001",
+            stock=100,
+            reserved_quantity=30,
+        )
+        session.add(p1)
+        session.flush()
+
+        # 30 reserved + 70 new = 100 total, exactly at limit
+        repo.reserve_quantity(p1, 70)
+        assert p1.reserved_quantity == 100
+
+        session.close()
+
+    def test_reserve_quantity_exceeding_with_existing_reserved(self):
+        """reserve_quantity should reject when existing reserved + new exceeds stock."""
+        session = _create_session()
+        repo = ProductInventoryRepository(session)
+
+        p1 = Product(
+            product_id="prod-1",
+            store_id="store-1",
+            category_id="cat-1",
+            name="Product 1",
+            price=10.00,
+            sku="SKU-001",
+            stock=100,
+            reserved_quantity=30,
+        )
+        session.add(p1)
+        session.flush()
+
+        # 30 reserved + 71 new = 101 total, exceeds stock of 100
+        with pytest.raises(ValueError, match="Cannot reserve"):
+            repo.reserve_quantity(p1, 71)
+
+        session.close()
+
+    def test_reserve_quantity_rejected_product_unchanged(self):
+        """reserve_quantity should not modify product when validation fails."""
+        session = _create_session()
+        repo = ProductInventoryRepository(session)
+
+        p1 = Product(
+            product_id="prod-1",
+            store_id="store-1",
+            category_id="cat-1",
+            name="Product 1",
+            price=10.00,
+            sku="SKU-001",
+            stock=50,
+            reserved_quantity=0,
+        )
+        session.add(p1)
+        session.flush()
+
+        original_reserved = p1.reserved_quantity
+        original_stock = p1.stock
+
+        with pytest.raises(ValueError, match="Cannot reserve"):
+            repo.reserve_quantity(p1, 51)
+
+        assert p1.reserved_quantity == original_reserved
+        assert p1.stock == original_stock
+
+        session.close()
+
     def test_release_reservation_success(self):
         """release_reservation should decrease reserved_quantity."""
         session = _create_session()
