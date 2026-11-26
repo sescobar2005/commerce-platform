@@ -72,4 +72,26 @@
 - `back/src/core/orders/tests/test_order_repositories_unit.py` — 18/18 passed (15 existing + 4 new)
 - Full suite: 623 passed, 0 failed, 9 skipped (PostgreSQL integration tests skipped)
 
-**Next: Unit 3b.3 — Orders exception-to-HTTP mapping and router** (_handle_service_error() translating domain exceptions to HTTP responses, then orders router with POST /, GET /{order_id}, GET /, GET /{order_id}/items, GET /{order_id}/subitems).
+## Orders Unit 3b.3 — HTTP Exception Mapping — Commit `c24ba5e`
+
+### Completed
+- `back/src/core/orders/router.py` — new file with `_handle_service_error()`:
+  - OrderNotFoundError, OrderOwnershipError, OrderItemNotFoundError,
+    ProductNotFoundError, ProductInactiveError -> 404 NOT FOUND
+    (ownership/inactive errors return generic 'not found' to avoid
+    information disclosure)
+  - InsufficientStockError -> 409 CONFLICT
+  - IdempotencyConflictError -> 409 CONFLICT
+  - OrderError (fallback) -> 400 BAD_REQUEST
+  - Non-OrderError exceptions are re-raised unchanged (no broad catch)
+- No route definitions in this module - designed to be reused by the
+  future Orders router.
+- `back/src/core/orders/tests/test_order_http_errors_unit.py` — 21 tests
+
+### Test results
+- Focused tests: 21/21 passed
+- Full suite: 644 passed, 0 failed, 9 skipped (PostgreSQL integration tests skipped)
+
+**Next: Unit 3b.4 — Orders router** (POST /, GET /{order_id}, GET /,
+GET /{order_id}/items, GET /{order_id}/subitems, using
+_handle_service_error() for error translation).

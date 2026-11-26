@@ -1682,3 +1682,18 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Tests or checks | 18/18 repository tests pass (15 existing + 4 new); 22/22 service retrieval tests pass; full suite: 623 passed, 0 failed, 9 skipped |
 | Commit hashes | Correction 1: `6de6658`; Correction 2: `c96b6c0` |
 | Observations | No routers, HTTP error mapping, or migrations in these corrections. PostgreSQL row-lock semantics NOT verified — SQLite only.
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-26 |
+| Phase | Phase 2 (Database Stabilization) ? Orders Unit 3b.3: HTTP Exception Mapping |
+| Completed unit | Orders HTTP exception mapping layer |
+| Files affected | `back/src/core/orders/router.py` (new), `back/src/core/orders/tests/test_order_http_errors_unit.py` (new) |
+| Function | `_handle_service_error(exc: OrderError) -> HTTPException` |
+| Exception mapping | OrderNotFoundError/OrderOwnershipError/OrderItemNotFoundError/ProductNotFoundError/ProductInactiveError -> 404 NOT FOUND (generic messages, no info disclosure); InsufficientStockError/IdempotencyConflictError -> 409 CONFLICT; OrderError fallback -> 400 BAD_REQUEST; non-OrderError exceptions re-raised unchanged |
+| Privacy | OrderOwnershipError and ProductInactiveError return "Order not found"/"Product not found" to avoid revealing ownership or product state |
+| Tests or checks | 21/21 HTTP error mapping tests pass; full suite: 644 passed, 0 failed, 9 skipped |
+| Commit hash | `c24ba5e` |
+| Observations | No route definitions in this module - designed to be reused by the future Orders router (Unit 3b.4). No migrations applied.
