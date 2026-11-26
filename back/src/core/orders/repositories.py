@@ -49,7 +49,8 @@ class OrderRepository:
         return (
             self.db.query(Order)
             .options(
-                joinedload(Order.items).joinedload(OrderItem.product)
+                joinedload(Order.items).joinedload(OrderItem.product),
+                joinedload(Order.subitems),
             )
             .filter(Order.order_id == order_id)
             .first()
@@ -79,6 +80,23 @@ class OrderRepository:
             .offset(skip)
             .limit(limit)
             .all()
+        )
+
+    def count_by_user_id(self, user_id: str) -> int:
+        """Count total orders belonging to a user.
+
+        Used for pagination metadata in order listings.
+
+        Args:
+            user_id: The authenticated user's identifier.
+
+        Returns:
+            Total number of orders owned by the user.
+        """
+        return (
+            self.db.query(Order)
+            .filter(Order.user_id == user_id)
+            .count()
         )
 
     def get_by_user_and_idempotency_key(

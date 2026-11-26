@@ -28,6 +28,8 @@ from src.core.orders.exceptions import (
     IdempotencyConflictError,
     InsufficientStockError,
     OrderError,
+    OrderNotFoundError,
+    OrderOwnershipError,
     ProductInactiveError,
     ProductNotFoundError,
 )
@@ -310,6 +312,119 @@ class OrderService:
         except Exception:
             self.db.rollback()
             raise
+
+    def get_order_by_id(
+        self, order_id: str, current_user: CurrentUser
+    ) -> Order:
+        """Retrieve an order by ID with authorization.
+
+        Only the order's owning buyer or an administrator may retrieve
+        a complete order. Sellers cannot access an order merely because
+        they have products in it.
+
+        Args:
+            order_id: The unique order identifier.
+            current_user: The authenticated user.
+
+        Returns:
+            The Order ORM instance with items and subitems loaded.
+
+        Raises:
+            OrderNotFoundError: If the order does not exist.
+            OrderOwnershipError: If the user is not the owner or admin.
+        """
+        order = self.order_repo.get_by_id(order_id)
+        if order is None:
+            raise OrderNotFoundError(order_id)
+
+        if (
+            str(order.user_id) != current_user.user_id
+            and not current_user.is_admin
+        ):
+            raise OrderOwnershipError(order_id, current_user.user_id)
+
+        return order
+
+    def list_orders_by_user(
+        self,
+        current_user: CurrentUser,
+        skip: int = 0,
+        limit: int = 20,
+    ) -> tuple:
+        """List orders belonging to the authenticated user.
+
+        Buyers see only their own orders. Administrators also see only
+        their own orders through this method; there is no
+        get_all-orders scope in the repository layer, so admin override
+        for viewing every order is a future enhancement.
+
+        Args:
+            current_user: The authenticated user.
+            skip: Number of records to skip (pagination).
+            limit: Maximum number of records to return.
+
+        Returns:
+            A tuple of (orders, total_count) for pagination.
+
+        Raises:
+            OrderError: If skip or limit are invalid.
+        """
+        if skip < 0:
+            raise OrderError("skip must be non-negative")
+        if limit < 1:
+            raise OrderError("limit must be positive")
+
+        user_id = str(current_user.user_id)
+        orders = self.order_repo.get_by_user_id(user_id, skip, limit)
+        total = self.order_repo.count_by_user_id(user_id)
+
+        return orders, total
+
+    def get_order_items(
+        self, order_id: str, current_user: CurrentUser
+    ):
+        """Retrieve all order items for an order.
+
+        First verifies the caller can access the parent order. Buyers
+        and administrators may retrieve all items; sellers are not
+        granted item access through this method.
+
+        Args:
+            order_id: The parent order identifier.
+            current_user: The authenticated user.
+
+        Returns:
+            A list of OrderItem ORM instances.
+
+        Raises:
+            OrderNotFoundError: If the order does not exist.
+            OrderOwnershipError: If the user is not authorized.
+        """
+        self.get_order_by_id(order_id, current_user)
+        return self.order_item_repo.get_by_order_id(order_id)
+
+    def get_order_subitems(
+        self, order_id: str, current_user: CurrentUser
+    ):
+        """Retrieve all order subitems for an order.
+
+        First verifies the caller can access the parent order. Buyers
+        and administrators may retrieve all subitems; sellers are not
+        granted subitem access through this method.
+
+        Args:
+            order_id: The parent order identifier.
+            current_user: The authenticated user.
+
+        Returns:
+            A list of OrderSubitem ORM instances.
+
+        Raises:
+            OrderNotFoundError: If the order does not exist.
+            OrderOwnershipError: If the user is not authorized.
+        """
+        self.get_order_by_id(order_id, current_user)
+        return self.order_subitem_repo.get_by_order_id(order_id)
 
     @staticmethod
     def _is_idempotency_constraint_violation(
