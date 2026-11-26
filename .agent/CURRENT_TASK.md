@@ -5,12 +5,12 @@
 | Field | Value |
 |-------|-------|
 | Current phase | Phase 2 (Database Stabilization) → Orders Unit 3b |
-| Current task | Orders Unit 3b.1 — Pydantic API Schemas (complete) |
+| Current task | Orders Unit 3b.2 — OrderService Retrieval Methods (complete) |
 | Objective | Implement OrderService creation flow for the Orders module, starting with database migration (source_cart_id, request_fingerprint columns), StoreRepository, cart locking, exceptions/fingerprint utility, OrderService.create_order_from_cart(), and Order API schemas |
-| Completed units | 3a.1 (commit `241b4a5`), 3a.2 (commit `363a36d`), 3a.3 (commit `0ecb5d4`), 3a.4 (commit `f5e9065`), 3a.5 (commit `9f5b245` includes P1+P2), P3 correction (commit `01a38ac`), 3b.1 schemas (commit `a9536a0`) |
+| Completed units | 3a.1 (commit `241b4a5`), 3a.2 (commit `363a36d`), 3a.3 (commit `0ecb5d4`), 3a.4 (commit `f5e9065`), 3a.5 (commit `9f5b245` includes P1+P2), P3 correction (commit `01a38ac`), 3b.1 schemas (commit `a9536a0`), 3b.2 retrieval methods (commit `2f865a7`) |
 | Corrections applied | P1: IntegrityError discrimination by constraint name (`uq_order_user_idempotency_key`); P2: Removed pre-try-block rollbacks; P3: Stock guard in `reserve_quantity()` |
-| Test results | 597 passed, 0 failed, 9 skipped (PostgreSQL integration tests skipped) |
-| Pending | Unit 3b.2: OrderService retrieval methods (get_order_by_id, list_orders_by_user, get_order_items, get_order_subitems); PostgreSQL row-lock semantics verification (SQLite only, no live PostgreSQL available) |
+| Test results | 619 passed, 0 failed, 9 skipped (PostgreSQL integration tests skipped) |
+| Pending | Unit 3b.3: Orders exception-to-HTTP mapping and router; PostgreSQL row-lock semantics verification (SQLite only, no live PostgreSQL available) |
 | Scope | `back/src/core/models/cart.py`, `back/src/core/models/__init__.py`, `back/alembic/env.py`, `back/alembic/versions/7f3a1e2c4d8b_add_cart_and_cart_item_tables.py`, `back/.gitignore`, `back/tests/test_cart_models_unit.py` |
 | Files involved | `back/src/main.py`, `back/src/core/cart/__init__.py`, `back/src/core/cart/schemas.py`, `back/src/core/cart/router.py`, `back/src/core/models/cart.py`, `back/src/core/models/__init__.py`, `back/alembic/env.py`, `back/alembic/versions/7f3a1e2c4d8b_add_cart_and_cart_item_tables.py`, `back/.gitignore`, `back/tests/test_cart_models_unit.py`, `back/tests/test_cart_unit.py`, `back/tests/test_cart_item_unit.py`, `back/tests/test_cart_update_delete_unit.py` |
 | Completed units | All auth endpoints, all product endpoints, all category endpoints, all cart endpoints (create, retrieve, update, delete, add item, update item, remove item), Cart models (Cart, CartItem), Cart migrations, FastAPI entry point, Config fix (ALGORITHM optional), Alembic .gitignore fix, Cart/CartItem migration |

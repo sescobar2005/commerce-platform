@@ -45,4 +45,26 @@
 - `back/src/core/orders/tests/test_order_schemas_unit.py` — 25/25 passed
 - Full suite: 597 passed, 0 failed, 9 skipped (PostgreSQL integration tests skipped)
 
-**Next: Unit 3b.2 — OrderService retrieval methods** (get_order_by_id, list_orders_by_user, get_order_items, get_order_subitems) — required before GET endpoints can be implemented.
+## Orders Unit 3b.2 — OrderService Retrieval Methods — Commit `2f865a7`
+
+### Completed
+- `back/src/core/orders/services.py` — added 4 read-only retrieval methods:
+  - `get_order_by_id(order_id, current_user)` — buyer or admin access, raises OrderNotFoundError/OrderOwnershipError
+  - `list_orders_by_user(current_user, skip, limit)` — paginated listing with total count
+  - `get_order_items(order_id, current_user)` — items after parent order authorization check
+  - `get_order_subitems(order_id, current_user)` — subitems after parent order authorization check
+- `back/src/core/orders/repositories.py` — added:
+  - `count_by_user_id(user_id)` — count for pagination metadata
+  - `get_by_id()` now eagerly loads subitems (joinedload) to avoid N+1
+
+### Authorization
+- Buyers access only their own orders (`order.user_id == current_user.user_id`)
+- Administrators can access any order (`current_user.is_admin`)
+- Sellers cannot access orders merely because they have products in them
+- All methods are read-only - no commit/rollback/refresh
+
+### Test results
+- `back/src/core/orders/tests/test_order_service_retrieval_unit.py` — 22/22 passed
+- Full suite: 619 passed, 0 failed, 9 skipped (PostgreSQL integration tests skipped)
+
+**Next: Unit 3b.3 — Orders exception-to-HTTP mapping and router** (_handle_service_error() translating domain exceptions to HTTP responses, then orders router with POST /, GET /{order_id}, GET /, GET /{order_id}/items, GET /{order_id}/subitems).

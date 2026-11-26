@@ -1652,3 +1652,19 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Tests or checks | 25/25 schema unit tests pass; full suite: 597 passed, 0 failed, 9 skipped |
 | Commit hash | `a9536a0` |
 | Observations | No routers, models, migrations, or service changes made in this unit. OrderService retrieval methods still needed for GET endpoints (Unit 3b.2).
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-26 |
+| Phase | Phase 2 (Database Stabilization) ? Orders Unit 3b.2: OrderService Retrieval Methods |
+| Completed unit | OrderService read-only retrieval methods |
+| Files affected | `back/src/core/orders/services.py` (modified), `back/src/core/orders/repositories.py` (modified), `back/src/core/orders/tests/test_order_service_retrieval_unit.py` (new) |
+| Methods added | get_order_by_id(order_id, current_user) -> Order; list_orders_by_user(current_user, skip, limit) -> (orders, total); get_order_items(order_id, current_user) -> List[OrderItem]; get_order_subitems(order_id, current_user) -> List[OrderSubitem] |
+| Repository changes | OrderRepository.count_by_user_id(user_id) -> int; OrderRepository.get_by_id() now eagerly loads Order.subitems via joinedload |
+| Authorization | Buyers access own orders only (user_id match); Administrators access any order (is_admin); Sellers excluded unless they are the order owner; OrderOwnershipError for unauthorized access; OrderNotFoundError for missing orders |
+| Transaction rules | All methods read-only - no commit/rollback/refresh; repositories have no transaction methods |
+| Tests or checks | 22/22 retrieval unit tests pass; full suite: 619 passed, 0 failed, 9 skipped |
+| Commit hash | `2f865a7` |
+| Observations | No routers, HTTP error mapping, or migrations in this unit. Next: Unit 3b.3 orders router with exception-to-HTTP mapping.
