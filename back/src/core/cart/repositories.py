@@ -39,6 +39,33 @@ class CartRepository:
             .first()
         )
 
+    def get_by_id_for_update(self, cart_id: str) -> Optional[Cart]:
+        """Retrieve a cart by its ID with a row-level lock.
+
+        Acquires ``SELECT ... FOR UPDATE`` on the parent Cart row to
+        coordinate concurrent mutations (e.g., order creation vs. cart
+        item add/update/remove). The lock is held until the caller's
+        transaction commits or rolls back.
+
+        Uses joinedload to avoid N+1 queries when accessing cart items
+        and their associated products.
+
+        Args:
+            cart_id: The cart identifier.
+
+        Returns:
+            The locked Cart if found, None otherwise.
+        """
+        return (
+            self.db.query(Cart)
+            .options(
+                joinedload(Cart.items).joinedload(CartItem.product)
+            )
+            .filter(Cart.cart_id == cart_id)
+            .with_for_update()
+            .first()
+        )
+
     def get_by_user_id(self, user_id: str) -> Optional[Cart]:
         """Retrieve the first cart belonging to a user.
 

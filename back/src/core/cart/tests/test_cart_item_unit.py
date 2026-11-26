@@ -110,10 +110,11 @@ class TestCartItemAdd:
         self.mock_db = MagicMock()
 
     def _setup_cart_query(self, cart):
-        """Configure mock for cart query: query().options().filter().first()"""
+        """Configure mock for cart query: query().options().filter().with_for_update().first()"""
         mock_query = MagicMock()
         mock_query.options.return_value = mock_query
         mock_query.filter.return_value = mock_query
+        mock_query.with_for_update.return_value = mock_query
         mock_query.first.return_value = cart
         return mock_query
 
@@ -378,10 +379,11 @@ class TestCartItemUpdate:
         self.mock_db = MagicMock()
 
     def _setup_cart_query(self, cart):
-        """Configure mock for cart query: query().options().filter().first()"""
+        """Configure mock for cart query: query().options().filter().with_for_update().first()"""
         mock_query = MagicMock()
         mock_query.options.return_value = mock_query
         mock_query.filter.return_value = mock_query
+        mock_query.with_for_update.return_value = mock_query
         mock_query.first.return_value = cart
         return mock_query
 
@@ -541,9 +543,10 @@ class TestCartItemRemove:
         self.mock_db = MagicMock()
 
     def _setup_cart_query(self, cart):
-        """Configure mock for cart query: query().filter().first()"""
+        """Configure mock for cart query: query().filter().with_for_update().first()"""
         mock_query = MagicMock()
         mock_query.filter.return_value = mock_query
+        mock_query.with_for_update.return_value = mock_query
         mock_query.first.return_value = cart
         return mock_query
 
@@ -560,6 +563,7 @@ class TestCartItemRemove:
                 cm = MagicMock()
                 cm.options.return_value = cm
                 cm.filter.return_value = cm
+                cm.with_for_update.return_value = cm
                 cm.first.return_value = cart
                 return cm
             return MagicMock()

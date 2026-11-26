@@ -44,6 +44,33 @@ class CartService:
         self.item_repo = CartItemRepository(db)
         self.db = db
 
+    def _get_locked_cart(
+        self, cart_id: str, current_user: CurrentUser
+    ) -> Cart:
+        """Retrieve and lock the parent Cart row, verifying ownership.
+
+        Acquires ``SELECT ... FOR UPDATE`` on the Cart row before any
+        item-level read or mutation, coordinating concurrent access
+        (e.g., cart mutations vs. order creation).
+
+        Args:
+            cart_id: The cart identifier.
+            current_user: The authenticated user.
+
+        Returns:
+            The locked Cart object.
+
+        Raises:
+            CartNotFoundError: If the cart does not exist.
+            CartOwnershipError: If the cart belongs to another user.
+        """
+        cart = self.cart_repo.get_by_id_for_update(cart_id)
+        if cart is None:
+            raise CartNotFoundError(cart_id)
+        if str(cart.user_id) != current_user.user_id:
+            raise CartOwnershipError(cart_id, current_user.user_id)
+        return cart
+
     # ------------------------------------------------------------------
     # Cart-level operations
     # ------------------------------------------------------------------
@@ -183,7 +210,7 @@ class CartService:
             ProductInactiveError: If the product is not active.
             InsufficientStockError: If requested quantity exceeds stock.
         """
-        cart = self.get_cart(cart_id, current_user)
+        cart = self._get_locked_cart(cart_id, current_user)
 
         product = self.db.query(Product).filter(
             Product.product_id == product_id
@@ -259,7 +286,7 @@ class CartService:
             ProductInactiveError: If the product is not active.
             InsufficientStockError: If requested quantity exceeds stock.
         """
-        cart = self.get_cart(cart_id, current_user)
+        cart = self._get_locked_cart(cart_id, current_user)
 
         item = None
         for i in cart.items:
@@ -316,7 +343,7 @@ class CartService:
             CartOwnershipError: If the cart belongs to another user.
             CartItemNotFoundError: If the item does not exist.
         """
-        cart = self.get_cart(cart_id, current_user)
+        cart = self._get_locked_cart(cart_id, current_user)
 
         item = None
         for i in cart.items:

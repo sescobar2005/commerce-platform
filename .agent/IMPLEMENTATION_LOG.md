@@ -1558,5 +1558,22 @@ This log records each completed implementation unit chronologically. Do not fabr
 | StoreRepository methods | get_seller_id(store_id) -> Optional[str]; get_seller_ids(store_ids) -> Dict[str, str] |
 | Transaction rules | No commit()/rollback()/refresh() in repositories. Service layer owns transaction boundaries. |
 | Tests or checks | 10/10 store repository tests pass; full suite: 493 passed, 0 failed, 9 skipped |
-| Commit hash | Pending |
+| Commit hash | `363a36d` |
 | Observations | Bulk get_seller_ids avoids N+1 queries when resolving sellers for multiple products. Single get_seller_id returns None for nonexistent stores. No transaction management in repository.
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-26 |
+| Phase | Phase 2 (Database Stabilization) - Orders Unit 3a.3: Cart Concurrency Coordination |
+| Completed unit | Cart row-level locking for cart mutation methods |
+| Files affected | `back/src/core/cart/repositories.py` (modified), `back/src/core/cart/services.py` (modified), `back/src/core/cart/tests/test_cart_item_unit.py` (modified), `back/src/core/cart/tests/test_cart_locking_unit.py` (new) |
+| Repository method | CartRepository.get_by_id_for_update(cart_id) -> Optional[Cart] — SELECT ... FOR UPDATE with joinedload |
+| Service method | CartService._get_locked_cart(cart_id, current_user) -> Cart — locks + existence + ownership check |
+| Mutation methods updated | add_item(), update_item(), remove_item() — all call _get_locked_cart before item access |
+| Unchanged methods | get_cart() — normal read, no lock |
+| Transaction rules | No commit/rollback/refresh in repositories. Lock held until service-layer commit/rollback. Lock ordering: cart row first. |
+| Tests or checks | 12/12 new locking tests pass; 9 existing cart item tests pass (mock updates for with_for_update); full suite: 505 passed, 0 failed, 9 skipped |
+| Commit hash | Pending |
+| Observations | SQLite does not provide PostgreSQL row-level locking semantics — tests verify query method calls, not actual concurrency safety. No migrations added. No API contract changes. Existing cart item unit test mocks updated to include with_for_update() in the query chain.
