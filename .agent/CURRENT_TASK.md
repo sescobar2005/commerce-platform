@@ -201,4 +201,17 @@ Database infrastructure (commits `79367fd`, `c6752fd`, `ba13a24`, `b586e55`, `19
 | Observations | Follows CartRepository conventions without commit()/rollback()/refresh() methods. OrderSubitemRepository.get_by_id retrieves subitem by ID. OrderSubitemRepository.get_by_order_id supports querying all subitems for an order. OrderSubitemRepository.get_by_order_and_seller scopes lookup by both order_id and seller_id. All persistence via self.db.add()/self.db.delete() only. |
 | Last updated | 2026-11-25 |
 
+### Orders Unit 2b.2: PaymentRepository (commit `6d55817`)
+
+| Field | Value |
+|-------|-------|
+| Completed unit | Orders repository layer - PaymentRepository |
+| Files affected | `back/src/core/orders/repositories.py` (modified), `back/src/core/orders/tests/test_payment_repository_unit.py` (new) |
+| Repository class | PaymentRepository |
+| PaymentRepository methods | get_by_id(payment_id), get_by_order_id(order_id), get_by_order_and_idempotency_key(order_id, idempotency_key), add(payment), delete(payment) |
+| Transaction rules | No commit()/rollback()/refresh() in repositories. Service layer owns transaction boundaries. |
+| Test results | 8/8 payment repository tests pass; full suite: 427 passed, 0 failed, 9 skipped |
+| Commit hash | `6d55817` |
+| Observations | Follows CartRepository conventions without commit()/rollback()/refresh() methods. PaymentRepository.get_by_id retrieves payment by ID. PaymentRepository.get_by_order_id supports querying all payments for an order. PaymentRepository.get_by_order_and_idempotency_key scopes lookup by both order_id and idempotency_key. All persistence via self.db.add()/self.db.delete() only. |
+
 

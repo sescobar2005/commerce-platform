@@ -1487,4 +1487,19 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Commit hash | `1f9c221` |
 | Observations | Repository pattern follows CartRepository conventions without commit()/rollback()/refresh() methods. OrderSubitemRepository.get_by_id retrieves subitem by ID. OrderSubitemRepository.get_by_order_id supports querying all subitems for an order. OrderSubitemRepository.get_by_order_and_seller scopes lookup by both order_id and seller_id. All persistence via self.db.add()/self.db.delete() only. |
 
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-25 |
+| Phase | Phase 2 (Database Stabilization) - Orders Unit 2b.2: PaymentRepository |
+| Completed unit | Orders repository layer - PaymentRepository |
+| Files affected | `back/src/core/orders/repositories.py` (modified), `back/src/core/orders/tests/test_payment_repository_unit.py` (new) |
+| Repository class | PaymentRepository |
+| PaymentRepository methods | get_by_id(payment_id), get_by_order_id(order_id), get_by_order_and_idempotency_key(order_id, idempotency_key), add(payment), delete(payment) |
+| Transaction rules | No commit()/rollback()/refresh() in repositories. Service layer owns transaction boundaries. |
+| Tests or checks | 8/8 payment repository tests pass; full suite: 427 passed, 0 failed, 9 skipped |
+| Commit hash | `6d55817` |
+| Observations | Repository pattern follows CartRepository conventions without commit()/rollback()/refresh() methods. PaymentRepository.get_by_id retrieves payment by ID. PaymentRepository.get_by_order_id supports querying all payments for an order. PaymentRepository.get_by_order_and_idempotency_key scopes lookup by both order_id and idempotency_key. All persistence via self.db.add()/self.db.delete() only. |
+
 

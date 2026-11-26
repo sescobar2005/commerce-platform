@@ -57,6 +57,7 @@ This unit builds on the completed authentication module, seller module, product 
 | Orders Unit 1: Database Migration + SQLAlchemy Models | Complete (commits `a0a3c81`, `495f520`, `a2a43c6`) |
 | Orders Unit 2a: Order and OrderItem Repositories | Complete (commit `b777629`) |
 | Orders Unit 2b.1: OrderSubitemRepository | Complete (commit `1f9c221`) |
+| Orders Unit 2b.2: PaymentRepository | Complete (commit `6d55817`) |
 | Local PostgreSQL instance | Provisioned |
 | Development database (`plataforma_comercio_dev`) | Created and migrated |
 | `DATABASE_URL` configured in `back/.env` | Configured |
@@ -84,10 +85,9 @@ This unit builds on the completed authentication module, seller module, product 
 
 ## Next Recommended Implementation Unit
 
-**Orders Unit 2b.2: OrderSubitem, Payment, Commission Repositories**
+**Orders Unit 2b.3: CommissionRepository**
 
-Create remaining order repository classes:
-- PaymentRepository: get_by_id, get_by_order_id, get_by_order_and_idempotency_key, add, delete
+Create CommissionRepository:
 - CommissionRepository: get_by_id, get_by_seller_id, get_by_order_subitem_id, add, delete
 
 Then implement OrderService with transaction-boundary management (commit/rollback at service layer, not repository).
