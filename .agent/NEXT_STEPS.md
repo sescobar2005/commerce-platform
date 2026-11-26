@@ -57,6 +57,10 @@
   - `count_by_user_id(user_id)` — count for pagination metadata
   - `get_by_id()` now eagerly loads subitems (joinedload) to avoid N+1
 
+### Corrections
+- Correction 1 (commit `6de6658`): Added integration tests proving `get_by_id()` returns complete items and subitems collections. Verified `.unique()` is NOT required for `Session.query()` legacy API in SQLAlchemy 2.0 — the Query object internally handles result merging. `.unique()` is only needed on `Result` objects from `Session.execute()`.
+- Correction 2 (commit `c96b6c0`): Added `Order.order_id.desc()` as stable secondary sort key to `get_by_user_id()` for deterministic pagination ordering.
+
 ### Authorization
 - Buyers access only their own orders (`order.user_id == current_user.user_id`)
 - Administrators can access any order (`current_user.is_admin`)
@@ -65,6 +69,7 @@
 
 ### Test results
 - `back/src/core/orders/tests/test_order_service_retrieval_unit.py` — 22/22 passed
-- Full suite: 619 passed, 0 failed, 9 skipped (PostgreSQL integration tests skipped)
+- `back/src/core/orders/tests/test_order_repositories_unit.py` — 18/18 passed (15 existing + 4 new)
+- Full suite: 623 passed, 0 failed, 9 skipped (PostgreSQL integration tests skipped)
 
 **Next: Unit 3b.3 — Orders exception-to-HTTP mapping and router** (_handle_service_error() translating domain exceptions to HTTP responses, then orders router with POST /, GET /{order_id}, GET /, GET /{order_id}/items, GET /{order_id}/subitems).

@@ -1668,3 +1668,17 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Tests or checks | 22/22 retrieval unit tests pass; full suite: 619 passed, 0 failed, 9 skipped |
 | Commit hash | `2f865a7` |
 | Observations | No routers, HTTP error mapping, or migrations in this unit. Next: Unit 3b.3 orders router with exception-to-HTTP mapping.
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-26 |
+| Phase | Phase 2 (Database Stabilization) ? Orders Unit 3b.2 Corrections (P1, P2) |
+| Completed unit | Two targeted corrections to OrderRepository query behavior |
+| Files affected | `back/src/core/orders/repositories.py` (modified, Correction 2); `back/src/core/orders/tests/test_order_repositories_unit.py` (modified, both corrections) |
+| Correction 1: Collection eager loading | Verified `.unique()` is NOT required for `Session.query()` legacy API in SQLAlchemy 2.0. The Query object internally handles result merging for eager-loaded collections. `.unique()` is only needed on `Result` objects from `Session.execute()` (modern 2.0 style), which this codebase does not use. Added 3 integration tests proving complete items and subitems collections are returned by `get_by_id()`. No production code change needed. |
+| Correction 2: Deterministic pagination | Added `Order.order_id.desc()` as stable secondary sort key to `OrderRepository.get_by_user_id()`. Orders sharing the same `created_at` are now ordered by `order_id.desc()`, preventing pagination inconsistencies. Added 1 regression test. |
+| Tests or checks | 18/18 repository tests pass (15 existing + 4 new); 22/22 service retrieval tests pass; full suite: 623 passed, 0 failed, 9 skipped |
+| Commit hashes | Correction 1: `6de6658`; Correction 2: `c96b6c0` |
+| Observations | No routers, HTTP error mapping, or migrations in these corrections. PostgreSQL row-lock semantics NOT verified — SQLite only.
