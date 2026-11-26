@@ -1,83 +1,48 @@
 # NEXT_STEPS.md
 
-## Orders Unit 3a.1 — OrderService Foundation and Order Creation — Complete (commit `241b4a5`)
+## Orders Unit 3a — Complete (all 5 units + corrections)
 
-**Database migration and model updates — Complete.**
-- Added `source_cart_id: String(36)` (nullable, no FK) to `Order` model in `back/src/core/models/order.py`.
-- Added `request_fingerprint: String(64)` (nullable, no FK) to `Order` model.
-- Created Alembic migration `0e9ed90dea55` (revises `8e7f6d5c4b3a`) adding both nullable columns to `orders` table.
-- Migration created but NOT applied to any database.
-- Added model unit tests (`test_order_source_cart_fingerprint_unit.py`) and migration unit tests (`test_order_migration_unit.py`).
-- Full suite: 483 passed, 9 skipped, 0 failed.
+### Unit 3a.1 — Order model migration + source_cart_id/request_fingerprint — Commit `241b4a5`
+- Added `source_cart_id: String(36)` (nullable, no FK) and `request_fingerprint: String(64)` (nullable, no FK) to `Order` model
+- Alembic migration `0e9ed90dea55` created but NOT applied
 
-## Orders Unit 3a.2 — StoreRepository — Complete (commit `363a36d`)
+### Unit 3a.2 — StoreRepository — Commit `363a36d`
+- `get_seller_id(store_id)` and `get_seller_ids(store_ids)` bulk lookup
+- No transaction methods in repository
 
-**StoreRepository — Complete.**
-- Added `StoreRepository` to `back/src/core/orders/repositories.py` with:
-  - `get_seller_id(store_id)` — single store lookup, returns seller ID or None.
-  - `get_seller_ids(store_ids)` — bulk lookup returning dict mapping store_id -> seller_id, avoids N+1.
-- Added Store model import to repositories.py.
-- No commit/rollback/refresh methods (transaction boundary owned by service layer).
-- Added focused unit tests (`test_store_repository_unit.py`): 10/10 pass.
-- Full suite: 493 passed, 0 failed, 9 skipped.
+### Unit 3a.3 — Cart concurrency coordination — Commit `0ecb5d4`
+- `CartRepository.get_by_id_for_update()` with SELECT FOR UPDATE
+- Cart row locking in add_item/update_item/remove_item
 
-## Orders Unit 3a.3 — Cart concurrency coordination — Complete (commit `0ecb5d4`)
+### Unit 3a.4 — Orders exceptions + fingerprint utility — Commit `f5e9065`
+- Exception hierarchy, IdempotencyConflictError for HTTP 409
+- Deterministic SHA-256 fingerprint utility
 
-**Cart row locking — Complete.**
-- Added `CartRepository.get_by_id_for_update(cart_id)` — queries Cart with `SELECT ... FOR UPDATE` and joinedload for items+products.
-- Added `CartService._get_locked_cart(cart_id, current_user)` — locks cart row, verifies existence and ownership.
-- `CartService.add_item()` — locks cart row before reading/modifying items.
-- `CartService.update_item()` — locks cart row before reading/modifying items.
-- `CartService.remove_item()` — locks cart row before reading/modifying items.
-- `CartService.get_cart()` — unchanged (no lock, normal read).
-- Lock ordering: Cart row first (product row locks not needed for cart mutations).
-- Added focused unit tests (`test_cart_locking_unit.py`): 12/12 pass.
-- Updated existing cart item test mocks to include `with_for_update()` in query chain.
-- Full suite: 505 passed, 0 failed, 9 skipped.
-- PostgreSQL row-lock semantics NOT verified (SQLite only); documented limitation.
+### Unit 3a.5 — OrderService.create_order_from_cart() — Commit `9f5b245` (includes P1+P2)
+- Full transactional order creation flow
+- P1: IntegrityError discrimination by constraint name
+- P2: Removed pre-try-block rollbacks
 
-## Orders Unit 3a.4 — Orders exceptions and fingerprint utility — Complete (commit `f5e9065`)
+### P3 Correction — Inventory stock guard — Commit `01a38ac`
+- `reserve_quantity()` validates `reserved_quantity + quantity <= product.stock`
 
-**Orders exceptions (`back/src/core/orders/exceptions.py`) — Complete.**
-- `OrderError(Exception)` — base.
-- `OrderNotFoundError(OrderError)` — takes order_id.
-- `OrderOwnershipError(OrderError)` — takes order_id, user_id.
-- `OrderItemNotFoundError(OrderError)` — takes order_item_id.
-- `ProductNotFoundError(OrderError)` — takes product_id.
-- `ProductInactiveError(OrderError)` — takes product_id.
-- `InsufficientStockError(OrderError)` — takes product_id, requested, available.
-- `IdempotencyConflictError(OrderError)` — takes message; distinguishable for HTTP 409 mapping.
-- Cart exceptions NOT reused; independent of HTTP framework.
+## Orders Unit 3b.1 — Pydantic API Schemas — Commit `a9536a0`
 
-**Fingerprint utility (`back/src/core/orders/fingerprint.py`) — Complete.**
-- `generate_cart_fingerprint(cart: Cart) -> str` — SHA-256 of canonical cart representation.
-- Canonical input: cart_id + items sorted by product_id (product_id, quantity, price_at_time).
-- Decimal normalized to fixed 2-place string via quantize; never float.
-- JSON with sort_keys=True, compact separators; UTF-8 encoded.
-- 64-char lowercase hex digest.
-- Rejects non-Decimal monetary values.
-- Independent of DB sessions and HTTP requests.
-- Added focused unit tests (`test_order_exceptions_and_fingerprint_unit.py`): 28/28 pass.
-- Full suite: 533 passed, 0 failed, 9 skipped.
+### Completed
+- `back/src/core/orders/schemas.py` — new file with 6 schemas:
+  - `OrderCreateRequest` — cart_id only (idempotency key via header)
+  - `OrderItemResponse` — line item with price snapshot, nullable product_sku
+  - `OrderSubitemResponse` — seller sub-order with subtotal
+  - `OrderSummaryResponse` — lightweight listing (no nested items/subitems)
+  - `OrderResponse` — full detail with items + subitems, excludes request_fingerprint
+  - `OrderListResponse` — paginated list of summaries
+- Decimal for all monetary fields; JSON serialization as decimal strings
+- UUID types for IDs; timezone-aware datetime
+- from_attributes ORM compatibility on response schemas
+- ge=0 on monetary fields; gt=0 on quantities
 
-## Orders Unit 3a.5 — OrderService creation flow — Complete (commit pending)
+### Test results
+- `back/src/core/orders/tests/test_order_schemas_unit.py` — 25/25 passed
+- Full suite: 597 passed, 0 failed, 9 skipped (PostgreSQL integration tests skipped)
 
-**OrderService.create_order_from_cart() — Complete.**
-- `back/src/core/orders/services.py` — full transactional order creation flow.
-- Transaction boundary owned by service layer (commit once, rollback on any failure).
-- Cart row locked via `CartRepository.get_by_id_for_update()` before any item access.
-- Products locked in ascending order via `ProductInventoryRepository.lock_products()`.
-- Seller IDs resolved via `StoreRepository.get_seller_ids()` (bulk, no N+1).
-- Inventory reserved via `ProductInventoryRepository.reserve_quantity()`.
-- All monetary calculations use `Decimal`, never `float`.
-- `CartItem.price_at_time` used as authoritative price snapshot.
-- Cart remains intact after successful order creation.
-- Idempotency: same user+key+cart+fingerprint returns existing order; changed cart/fingerprint raises `IdempotencyConflictError`.
-- Concurrent IntegrityError on `(user_id, idempotency_key)` caught, rolled back, re-queried, fingerprint compared.
-- No Payment or Commission creation.
-- No cart clearing.
-- 27 unit + integration tests (mock-based + SQLite).
-- Full suite: 560 passed, 0 failed, 9 skipped.
-- PostgreSQL concurrency tests NOT run (no live PostgreSQL database available).
-
-**All Orders Unit 3a work is complete.** No further units in scope for this session.
+**Next: Unit 3b.2 — OrderService retrieval methods** (get_order_by_id, list_orders_by_user, get_order_items, get_order_subitems) — required before GET endpoints can be implemented.

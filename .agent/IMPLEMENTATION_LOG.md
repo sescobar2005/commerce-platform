@@ -1618,5 +1618,37 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Idempotency | (user_id, idempotency_key) unique constraint. Same key+cart+fingerprint returns existing order. Changed cart/fingerprint raises IdempotencyConflictError. Concurrent IntegrityError caught, rolled back, re-queried, fingerprint compared. |
 | Out of scope | No Payment/Commission creation. No cart clearing. No cancellation/status transitions. No routers. |
 | Tests or checks | 27/27 unit + integration tests pass (mock-based + SQLite integration); full suite: 560 passed, 0 failed, 9 skipped |
-| Commit hash | Pending |
+| Commit hash | `9f5b245` (includes P1+P2 corrections) |
 | Observations | SQLite integration tests verify database transaction behavior but do not prove PostgreSQL row-lock semantics. No live PostgreSQL database available for concurrency tests. Cart remains intact after successful order creation (verified in tests).
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-26 |
+| Phase | Phase 2 (Database Stabilization) - Orders Unit 3a corrections (P1, P2, P3) |
+| Completed unit | Three targeted audit corrections to Orders Unit 3a |
+| Files affected | `back/src/core/orders/services.py` (P1, P2), `back/src/core/orders/repositories.py` (P3), `back/src/core/orders/tests/test_order_service_unit.py` (P1, P2 tests), `back/src/core/orders/tests/test_product_inventory_repository_unit.py` (P3 tests) |
+| P1: IntegrityError discrimination | Added `_is_idempotency_constraint_violation()` and `_extract_constraint_name()` static methods to OrderService. Only treats IntegrityError as idempotency conflict when `diag.constraint_name == "uq_order_user_idempotency_key"` (psycopg3 structured metadata). FK, CHECK, NOT NULL, unrelated unique violations re-raised as original IntegrityError. Unknown constraint metadata ? re-raise. |
+| P2: Remove pre-try-block rollbacks | Removed `self.db.rollback()` from missing cart, cart ownership, empty cart, invalid quantity, invalid price error paths (all before write operations). Rollback preserved inside exception handlers after writes started. |
+| P3: Inventory stock guard | Added `reserved_quantity + quantity <= product.stock` validation to `ProductInventoryRepository.reserve_quantity()`. Raises ValueError if reservation would exceed stock. Product unchanged on rejection. |
+| Tests or checks | P1: 6 new tests (compatible constraint, incompatible constraint, FK violation, CHECK violation, unrelated unique, unknown metadata). P2: Updated 6 validation tests to assert rollback NOT called. P3: 6 new tests (within limit, exactly at limit, exceeding limit, with existing reserved, exceeding with existing reserved, product unchanged). Full suite: 572 passed, 0 failed, 9 skipped |
+| Commit hashes | P1+P2: `9f5b245`; P3: `01a38ac` |
+| Observations | P1+P2 combined in one commit (same file). PostgreSQL row-lock semantics NOT verified — SQLite only. No live PostgreSQL database available.
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-26 |
+| Phase | Phase 2 (Database Stabilization) ? Orders Unit 3b.1: Pydantic API Schemas |
+| Completed unit | Orders API Pydantic schemas |
+| Files affected | `back/src/core/orders/schemas.py` (new), `back/src/core/orders/tests/test_order_schemas_unit.py` (new) |
+| Schemas | OrderCreateRequest (cart_id only); OrderItemResponse (line item snapshot); OrderSubitemResponse (seller sub-order); OrderSummaryResponse (listing, no nesting); OrderResponse (full detail, excludes request_fingerprint); OrderListResponse (paginated) |
+| Decimal handling | Decimal for all monetary fields; field_serializer(mode="plain") emits decimal strings in JSON; ge=0 validation on monetary fields |
+| UUID/datetime | UUID type for all IDs; datetime with timezone for timestamps |
+| ORM compatibility | model_config = {"from_attributes": True} on all response schemas |
+| Privacy | OrderResponse excludes request_fingerprint and source_cart_id; OrderCreateRequest accepts only cart_id (no server-controlled fields) |
+| Tests or checks | 25/25 schema unit tests pass; full suite: 597 passed, 0 failed, 9 skipped |
+| Commit hash | `a9536a0` |
+| Observations | No routers, models, migrations, or service changes made in this unit. OrderService retrieval methods still needed for GET endpoints (Unit 3b.2).
