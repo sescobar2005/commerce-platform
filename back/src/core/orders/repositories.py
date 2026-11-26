@@ -19,6 +19,7 @@ from src.core.models.order import (
     OrderSubitem,
     Payment,
 )
+from src.core.models.product import Product
 
 
 class OrderRepository:
@@ -413,3 +414,156 @@ class CommissionRepository:
         The caller is responsible for calling commit() on the session.
         """
         self.db.delete(commission)
+
+
+class ProductInventoryRepository:
+    """Repository for product inventory operations.
+
+    All database interactions related to product inventory are
+    encapsulated here. Uses SQLAlchemy ``SELECT ... FOR UPDATE`` for
+    row-level locking to prevent concurrent overselling.
+
+    Repositories do NOT manage transactions (commit/rollback/refresh).
+    The service layer owns transaction boundaries.
+    """
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    def lock_products(self, product_ids: List[str]) -> List[Product]:
+        """Lock product rows with ``SELECT ... FOR UPDATE``.
+
+        Products are locked in ascending ``product_id`` order to reduce
+        deadlock risk. Duplicate IDs are deduplicated before querying.
+        Raises ``ValueError`` if any requested product ID is not found.
+
+        Args:
+            product_ids: List of product IDs to lock.
+
+        Returns:
+            A list of locked ``Product`` objects.
+
+        Raises:
+            ValueError: If any requested product ID is not found.
+        """
+        # Deduplicate while preserving order, then sort ascending
+        # to prevent deadlocks when multiple transactions lock products.
+        unique_ids = list(dict.fromkeys(product_ids))
+        if not unique_ids:
+            return []
+
+        sorted_ids = sorted(unique_ids)
+
+        products = (
+            self.db.query(Product)
+            .filter(Product.product_id.in_(sorted_ids))
+            .with_for_update()
+            .order_by(Product.product_id.asc())
+            .all()
+        )
+
+        # Verify all requested products were found
+        found_ids = {p.product_id for p in products}
+        missing_ids = set(sorted_ids) - found_ids
+        if missing_ids:
+            raise ValueError(
+                f"Products not found: {sorted(missing_ids)}"
+            )
+
+        return products
+
+    def check_available_stock(
+        self, product: Product, quantity: int
+    ) -> bool:
+        """Check if sufficient stock is available for a locked product.
+
+        Available stock is ``stock - reserved_quantity``.
+
+        Args:
+            product: A locked ``Product`` object (from ``lock_products``).
+            quantity: Quantity to check.
+
+        Returns:
+            ``True`` if available stock >= quantity, ``False`` otherwise.
+
+        Raises:
+            ValueError: If quantity is not positive.
+        """
+        if quantity <= 0:
+            raise ValueError("Quantity must be positive")
+
+        return product.stock - product.reserved_quantity >= quantity
+
+    def reserve_quantity(self, product: Product, quantity: int) -> None:
+        """Reserve stock by increasing ``reserved_quantity``.
+
+        Does not decrease ``stock``. Reserved stock is consumed later
+        via :meth:`confirm_consumption`.
+
+        Args:
+            product: A locked ``Product`` object.
+            quantity: Quantity to reserve.
+
+        Raises:
+            ValueError: If quantity is not positive.
+        """
+        if quantity <= 0:
+            raise ValueError("Quantity must be positive")
+
+        product.reserved_quantity += quantity
+
+    def release_reservation(self, product: Product, quantity: int) -> None:
+        """Release reserved stock by decreasing ``reserved_quantity``.
+
+        Never allows ``reserved_quantity`` to become negative.
+
+        Args:
+            product: A locked ``Product`` object.
+            quantity: Quantity to release.
+
+        Raises:
+            ValueError: If quantity is not positive or would make
+                ``reserved_quantity`` negative.
+        """
+        if quantity <= 0:
+            raise ValueError("Quantity must be positive")
+
+        if product.reserved_quantity < quantity:
+            raise ValueError(
+                f"Cannot release {quantity} from reserved_quantity "
+                f"{product.reserved_quantity}"
+            )
+
+        product.reserved_quantity -= quantity
+
+    def confirm_consumption(self, product: Product, quantity: int) -> None:
+        """Consume reserved stock by decreasing both ``stock`` and
+        ``reserved_quantity``.
+
+        This should be called after payment is confirmed, to permanently
+        deduct the reserved items from stock.
+
+        Args:
+            product: A locked ``Product`` object.
+            quantity: Quantity to consume.
+
+        Raises:
+            ValueError: If quantity is not positive, exceeds
+                ``reserved_quantity``, or exceeds ``stock``.
+        """
+        if quantity <= 0:
+            raise ValueError("Quantity must be positive")
+
+        if product.reserved_quantity < quantity:
+            raise ValueError(
+                f"Cannot consume {quantity} from reserved_quantity "
+                f"{product.reserved_quantity}"
+            )
+
+        if product.stock < quantity:
+            raise ValueError(
+                f"Cannot consume {quantity} from stock {product.stock}"
+            )
+
+        product.stock -= quantity
+        product.reserved_quantity -= quantity
