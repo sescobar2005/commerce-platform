@@ -12,7 +12,13 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session, joinedload
 
-from src.core.models.order import Order, OrderItem, OrderSubitem
+from src.core.models.order import (
+    Commission,
+    Order,
+    OrderItem,
+    OrderSubitem,
+    Payment,
+)
 
 
 class OrderRepository:
@@ -246,3 +252,85 @@ class OrderSubitemRepository:
         The caller is responsible for calling commit() on the session.
         """
         self.db.delete(subitem)
+
+
+class PaymentRepository:
+    """Repository for Payment persistence operations.
+
+    All database interactions related to Payment entities are encapsulated here.
+    """
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    def get_by_id(self, payment_id: str) -> Optional[Payment]:
+        """Retrieve a payment by its ID.
+
+        Args:
+            payment_id: The unique payment identifier.
+
+        Returns:
+            The Payment if found, None otherwise.
+        """
+        return (
+            self.db.query(Payment)
+            .filter(Payment.payment_id == payment_id)
+            .first()
+        )
+
+    def get_by_order_id(self, order_id: str) -> List[Payment]:
+        """Retrieve all payments belonging to an order.
+
+        Args:
+            order_id: The parent order identifier.
+
+        Returns:
+            A list of Payment objects belonging to the order,
+            ordered by created_at ascending.
+        """
+        return (
+            self.db.query(Payment)
+            .filter(Payment.order_id == order_id)
+            .order_by(Payment.created_at.asc())
+            .all()
+        )
+
+    def get_by_order_and_idempotency_key(
+        self, order_id: str, idempotency_key: str
+    ) -> Optional[Payment]:
+        """Retrieve a payment by order-scoped idempotency key.
+
+        Prevents duplicate payment attempts when a client retries a request
+        with the same idempotency key. The lookup is scoped by both
+        order_id and idempotency_key to ensure clients cannot use another
+        order's idempotency key to retrieve a payment.
+
+        Args:
+            order_id: The parent order identifier.
+            idempotency_key: Client-provided idempotency key.
+
+        Returns:
+            The Payment if found, None otherwise.
+        """
+        return (
+            self.db.query(Payment)
+            .filter(
+                Payment.order_id == order_id,
+                Payment.idempotency_key == idempotency_key,
+            )
+            .first()
+        )
+
+    def add(self, payment: Payment) -> None:
+        """Add a new payment to the session.
+
+        The caller is responsible for calling commit() on the session.
+        """
+        self.db.add(payment)
+
+    def delete(self, payment: Payment) -> None:
+        """Delete a payment from the session.
+
+        The caller is responsible for calling commit() on the session.
+        """
+        self.db.delete(payment)
