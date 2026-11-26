@@ -1517,4 +1517,17 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Commit hash | `6d55817` |
 | Observations | Repository pattern follows CartRepository conventions without commit()/rollback()/refresh() methods. PaymentRepository.get_by_id retrieves payment by ID. PaymentRepository.get_by_order_id supports querying all payments for an order. PaymentRepository.get_by_order_and_idempotency_key scopes lookup by both order_id and idempotency_key. All persistence via self.db.add()/self.db.delete() only. |
 
+### Implementation Entry
 
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-25 |
+| Phase | Phase 2 (Database Stabilization) - Orders Unit 2b.4: ProductInventoryRepository |
+| Completed unit | Orders repository layer - ProductInventoryRepository |
+| Files affected | `back/src/core/orders/repositories.py` (modified), `back/src/core/orders/tests/test_product_inventory_repository_unit.py` (new) |
+| Repository class | ProductInventoryRepository |
+| ProductInventoryRepository methods | lock_products(product_ids), check_available_stock(product, quantity), reserve_quantity(product, quantity), release_reservation(product, quantity), confirm_consumption(product, quantity) |
+| Transaction rules | No commit()/rollback()/refresh() in repositories. Service layer owns transaction boundaries. |
+| Tests or checks | 22/22 product inventory repository tests pass; full suite: 435 passed, 0 failed, 9 skipped |
+| Commit hash | `064749f` |
+| Observations | Follows CartRepository conventions without commit()/rollback()/refresh() methods. lock_products uses SELECT FOR UPDATE with ascending product_id ordering and deduplication. Available stock = stock - reserved_quantity. reserve_quantity increases reserved_quantity. release_reservation decreases reserved_quantity (never negative). confirm_consumption decreases both stock and reserved_quantity. Errors raised for missing products, invalid quantities, insufficient stock, insufficient reserved_quantity. |
