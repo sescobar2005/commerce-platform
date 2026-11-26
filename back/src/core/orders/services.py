@@ -125,30 +125,25 @@ class OrderService:
                     and existing.source_cart_id == cart_id
                 ):
                     return existing
-            self.db.rollback()
             raise CartNotFoundError(cart_id)
 
         # Revalidate ownership after acquiring the lock
         if str(cart.user_id) != current_user.user_id:
-            self.db.rollback()
             raise CartOwnershipError(cart_id, current_user.user_id)
 
         # Step 4: Read consistent cart snapshot
         items = list(cart.items)
         if not items:
-            self.db.rollback()
             raise CartError("Cart is empty")
 
         # Validate quantities and monetary values
         for item in items:
             if not isinstance(item.quantity, int) or item.quantity <= 0:
-                self.db.rollback()
                 raise OrderError(
                     f"Invalid quantity for product {item.product_id}: "
                     f"{item.quantity}"
                 )
             if not isinstance(item.price_at_time, Decimal):
-                self.db.rollback()
                 raise OrderError(
                     f"Invalid price for product {item.product_id}: "
                     f"{item.price_at_time!r}"
@@ -290,7 +285,10 @@ class OrderService:
 
         except IntegrityError as exc:
             self.db.rollback()
-            if idempotency_key is not None:
+            if (
+                idempotency_key is not None
+                and self._is_idempotency_constraint_violation(exc)
+            ):
                 existing = (
                     self.order_repo.get_by_user_and_idempotency_key(
                         saved_user_id, idempotency_key
@@ -312,6 +310,60 @@ class OrderService:
         except Exception:
             self.db.rollback()
             raise
+
+    @staticmethod
+    def _is_idempotency_constraint_violation(
+        exc: IntegrityError,
+    ) -> bool:
+        """Check if the IntegrityError is from the idempotency unique constraint.
+
+        Inspects the database driver's structured error metadata
+        (psycopg ``diag.constraint_name``) rather than parsing human-readable
+        messages. Only the unique constraint on ``(user_id, idempotency_key)``
+        is treated as an idempotency conflict; all other constraint violations
+        (foreign-key, CHECK, NOT NULL, unrelated unique) are re-raised.
+
+        Args:
+            exc: The IntegrityError raised by the database driver.
+
+        Returns:
+            True if the error is positively identified as the idempotency
+            unique constraint violation, False otherwise.
+        """
+        constraint_name = OrderService._extract_constraint_name(exc)
+        return constraint_name == "uq_order_user_idempotency_key"
+
+    @staticmethod
+    def _extract_constraint_name(
+        exc: IntegrityError,
+    ) -> Optional[str]:
+        """Extract constraint name from SQLAlchemy/driver exception metadata.
+
+        Checks both the SQLAlchemy exception's ``diag`` attribute and the
+        wrapped driver exception in ``orig`` (psycopg3 exposes
+        ``diag.constraint_name`` for structured error metadata).
+
+        Args:
+            exc: The IntegrityError raised by the database driver.
+
+        Returns:
+            The constraint name if available, None otherwise.
+        """
+        diag = getattr(exc, "diag", None)
+        if diag is not None:
+            name = getattr(diag, "constraint_name", None)
+            if name:
+                return name
+
+        orig = getattr(exc, "orig", None)
+        if orig is not None:
+            diag = getattr(orig, "diag", None)
+            if diag is not None:
+                name = getattr(diag, "constraint_name", None)
+                if name:
+                    return name
+
+        return None
 
     def _validate_idempotency_key(self, idempotency_key: str) -> None:
         """Validate idempotency key against model constraints.

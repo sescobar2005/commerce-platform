@@ -396,9 +396,10 @@ class TestValidationErrors:
         with pytest.raises(CartNotFoundError, match="Cart not found"):
             service.create_order_from_cart("cart-1", current_user)
 
-        # No commit on failure
+        # No commit on failure; no rollback either (validation-only error,
+        # no writes attempted yet)
         mock_db.commit.assert_not_called()
-        mock_db.rollback.assert_called_once()
+        mock_db.rollback.assert_not_called()
 
     def test_missing_cart_idempotency_retry_returns_existing(self):
         """Missing cart with idempotency key returns existing order if source_cart_id matches."""
@@ -450,7 +451,8 @@ class TestValidationErrors:
                 "cart-1", current_user, idempotency_key="key-123"
             )
 
-        mock_db.rollback.assert_called_once()
+        # Validation-only error before any writes: no rollback
+        mock_db.rollback.assert_not_called()
 
     def test_cart_ownership_violation(self):
         """Cart belonging to another user raises CartOwnershipError."""
@@ -466,7 +468,8 @@ class TestValidationErrors:
         with pytest.raises(CartOwnershipError):
             service.create_order_from_cart("cart-1", current_user)
 
-        mock_db.rollback.assert_called_once()
+        # Validation-only error before any writes: no rollback
+        mock_db.rollback.assert_not_called()
 
     def test_empty_cart_raises_error(self):
         """Empty cart raises CartError."""
@@ -482,7 +485,8 @@ class TestValidationErrors:
         with pytest.raises(CartError, match="Cart is empty"):
             service.create_order_from_cart("cart-1", current_user)
 
-        mock_db.rollback.assert_called_once()
+        # Validation-only error before any writes: no rollback
+        mock_db.rollback.assert_not_called()
 
     def test_missing_product_raises_error(self):
         """Product not found raises ProductNotFoundError."""
@@ -597,7 +601,8 @@ class TestValidationErrors:
         with pytest.raises(OrderError, match="Invalid quantity"):
             service.create_order_from_cart("cart-1", current_user)
 
-        mock_db.rollback.assert_called_once()
+        # Validation-only error before any writes: no rollback
+        mock_db.rollback.assert_not_called()
 
     def test_invalid_price_raises_error(self):
         """Non-Decimal price raises OrderError."""
@@ -614,7 +619,8 @@ class TestValidationErrors:
         with pytest.raises(OrderError, match="Invalid price"):
             service.create_order_from_cart("cart-1", current_user)
 
-        mock_db.rollback.assert_called_once()
+        # Validation-only error before any writes: no rollback
+        mock_db.rollback.assert_not_called()
 
 
 # -----------------------------------------------------------------------
@@ -843,6 +849,10 @@ class TestIdempotency:
         service.order_repo.add = MagicMock()
         service.order_item_repo.add = MagicMock()
         service.order_subitem_repo.add = MagicMock()
+        # Mark the IntegrityError as the idempotency constraint violation
+        exc = IntegrityError("duplicate key", None, None)
+        exc.diag = SimpleNamespace(constraint_name="uq_order_user_idempotency_key")
+        mock_db.commit = MagicMock(side_effect=exc)
         # Make fingerprint match existing
         with patch(
             "src.core.orders.services.generate_cart_fingerprint",
@@ -922,6 +932,210 @@ class TestIdempotency:
                 )
 
         mock_db.rollback.assert_called()
+
+    def test_integrity_error_idempotency_constraint_compatible(self):
+        """Confirmed idempotency unique-constraint violation with compatible existing order returns it."""
+        mock_db = MagicMock()
+        mock_db.rollback = MagicMock()
+
+        item = _make_cart_item(product_id="product-1", quantity=1, price_at_time=Decimal("10.00"))
+        cart = _make_cart(cart_id="cart-1", user_id="user-1", items=[item])
+        product = _make_product(product_id="product-1", store_id="store-1", name="Test", sku="SKU-001", stock=100)
+        existing_order = SimpleNamespace(
+            order_id="order-existing",
+            user_id="user-1",
+            source_cart_id="cart-1",
+            request_fingerprint="fp-abc",
+        )
+
+        service, _ = self._setup_idempotent_service(
+            cart, [product], {"store-1": "seller-1"},
+            existing_order=None, mock_db=mock_db
+        )
+        service.order_repo.get_by_user_and_idempotency_key = MagicMock(
+            side_effect=[None, existing_order]
+        )
+        service.order_repo.add = MagicMock()
+        service.order_item_repo.add = MagicMock()
+        service.order_subitem_repo.add = MagicMock()
+        # Mark the IntegrityError as the idempotency constraint violation
+        exc = IntegrityError("duplicate key", None, None)
+        exc.diag = SimpleNamespace(constraint_name="uq_order_user_idempotency_key")
+        mock_db.commit = MagicMock(side_effect=exc)
+        with patch(
+            "src.core.orders.services.generate_cart_fingerprint",
+            return_value="fp-abc",
+        ):
+            current_user = _make_current_user("user-1")
+            result = service.create_order_from_cart(
+                "cart-1", current_user, idempotency_key="key-123"
+            )
+
+        assert result is existing_order
+
+    def test_integrity_error_idempotency_constraint_incompatible(self):
+        """Confirmed idempotency unique-constraint violation with incompatible existing order raises IdempotencyConflictError."""
+        mock_db = MagicMock()
+        mock_db.rollback = MagicMock()
+
+        item = _make_cart_item(product_id="product-1", quantity=1, price_at_time=Decimal("10.00"))
+        cart = _make_cart(cart_id="cart-1", user_id="user-1", items=[item])
+        product = _make_product(product_id="product-1", store_id="store-1", name="Test", sku="SKU-001", stock=100)
+        existing_order = SimpleNamespace(
+            order_id="order-existing",
+            user_id="user-1",
+            source_cart_id="cart-1",
+            request_fingerprint="fp-different",
+        )
+
+        service, _ = self._setup_idempotent_service(
+            cart, [product], {"store-1": "seller-1"},
+            existing_order=None, mock_db=mock_db
+        )
+        service.order_repo.get_by_user_and_idempotency_key = MagicMock(return_value=existing_order)
+        service.order_repo.add = MagicMock()
+        service.order_item_repo.add = MagicMock()
+        service.order_subitem_repo.add = MagicMock()
+        exc = IntegrityError("duplicate key", None, None)
+        exc.diag = SimpleNamespace(constraint_name="uq_order_user_idempotency_key")
+        mock_db.commit = MagicMock(side_effect=exc)
+        with patch(
+            "src.core.orders.services.generate_cart_fingerprint",
+            return_value="fp-original",
+        ):
+            current_user = _make_current_user("user-1")
+            with pytest.raises(IdempotencyConflictError):
+                service.create_order_from_cart(
+                    "cart-1", current_user, idempotency_key="key-123"
+                )
+
+    def test_integrity_error_foreign_key_violation_re_raises(self):
+        """Foreign-key IntegrityError re-raises the original error."""
+        mock_db = MagicMock()
+        mock_db.rollback = MagicMock()
+
+        item = _make_cart_item(product_id="product-1", quantity=1, price_at_time=Decimal("10.00"))
+        cart = _make_cart(cart_id="cart-1", user_id="user-1", items=[item])
+        product = _make_product(product_id="product-1", store_id="store-1", name="Test", sku="SKU-001", stock=100)
+        existing_order = SimpleNamespace(
+            order_id="order-existing",
+            user_id="user-1",
+            source_cart_id="cart-1",
+            request_fingerprint="fp-abc",
+        )
+
+        service, _ = self._setup_idempotent_service(
+            cart, [product], {"store-1": "seller-1"},
+            existing_order=None, mock_db=mock_db
+        )
+        service.order_repo.get_by_user_and_idempotency_key = MagicMock(
+            side_effect=[None, existing_order]
+        )
+        service.order_repo.add = MagicMock()
+        service.order_item_repo.add = MagicMock()
+        service.order_subitem_repo.add = MagicMock()
+        exc = IntegrityError("fk violation", None, None)
+        exc.diag = SimpleNamespace(constraint_name="fk_order_user_id")
+        mock_db.commit = MagicMock(side_effect=exc)
+        with patch(
+            "src.core.orders.services.generate_cart_fingerprint",
+            return_value="fp-abc",
+        ):
+            current_user = _make_current_user("user-1")
+            with pytest.raises(IntegrityError):
+                service.create_order_from_cart(
+                    "cart-1", current_user, idempotency_key="key-123"
+                )
+
+    def test_integrity_error_check_constraint_violation_re_raises(self):
+        """CHECK constraint IntegrityError re-raises the original error."""
+        mock_db = MagicMock()
+        mock_db.rollback = MagicMock()
+
+        item = _make_cart_item(product_id="product-1", quantity=1, price_at_time=Decimal("10.00"))
+        cart = _make_cart(cart_id="cart-1", user_id="user-1", items=[item])
+        product = _make_product(product_id="product-1", store_id="store-1", name="Test", sku="SKU-001", stock=100)
+
+        service, _ = self._setup_idempotent_service(
+            cart, [product], {"store-1": "seller-1"},
+            existing_order=None, mock_db=mock_db
+        )
+        service.order_repo.get_by_user_and_idempotency_key = MagicMock(return_value=None)
+        service.order_repo.add = MagicMock()
+        service.order_item_repo.add = MagicMock()
+        service.order_subitem_repo.add = MagicMock()
+        exc = IntegrityError("check violation", None, None)
+        exc.diag = SimpleNamespace(constraint_name="chk_product_stock_positive")
+        mock_db.commit = MagicMock(side_effect=exc)
+        with patch(
+            "src.core.orders.services.generate_cart_fingerprint",
+            return_value="fp-abc",
+        ):
+            current_user = _make_current_user("user-1")
+            with pytest.raises(IntegrityError):
+                service.create_order_from_cart(
+                    "cart-1", current_user, idempotency_key="key-123"
+                )
+
+    def test_integrity_error_unrelated_unique_constraint_re_raises(self):
+        """Unrelated unique-constraint IntegrityError re-raises the original error."""
+        mock_db = MagicMock()
+        mock_db.rollback = MagicMock()
+
+        item = _make_cart_item(product_id="product-1", quantity=1, price_at_time=Decimal("10.00"))
+        cart = _make_cart(cart_id="cart-1", user_id="user-1", items=[item])
+        product = _make_product(product_id="product-1", store_id="store-1", name="Test", sku="SKU-001", stock=100)
+
+        service, _ = self._setup_idempotent_service(
+            cart, [product], {"store-1": "seller-1"},
+            existing_order=None, mock_db=mock_db
+        )
+        service.order_repo.get_by_user_and_idempotency_key = MagicMock(return_value=None)
+        service.order_repo.add = MagicMock()
+        service.order_item_repo.add = MagicMock()
+        service.order_subitem_repo.add = MagicMock()
+        exc = IntegrityError("unique violation", None, None)
+        exc.diag = SimpleNamespace(constraint_name="uq_product_sku")
+        mock_db.commit = MagicMock(side_effect=exc)
+        with patch(
+            "src.core.orders.services.generate_cart_fingerprint",
+            return_value="fp-abc",
+        ):
+            current_user = _make_current_user("user-1")
+            with pytest.raises(IntegrityError):
+                service.create_order_from_cart(
+                    "cart-1", current_user, idempotency_key="key-123"
+                )
+
+    def test_integrity_error_unknown_constraint_metadata_re_raises(self):
+        """IntegrityError with unknown/unavailable constraint metadata re-raises the original error."""
+        mock_db = MagicMock()
+        mock_db.rollback = MagicMock()
+
+        item = _make_cart_item(product_id="product-1", quantity=1, price_at_time=Decimal("10.00"))
+        cart = _make_cart(cart_id="cart-1", user_id="user-1", items=[item])
+        product = _make_product(product_id="product-1", store_id="store-1", name="Test", sku="SKU-001", stock=100)
+
+        service, _ = self._setup_idempotent_service(
+            cart, [product], {"store-1": "seller-1"},
+            existing_order=None, mock_db=mock_db
+        )
+        service.order_repo.get_by_user_and_idempotency_key = MagicMock(return_value=None)
+        service.order_repo.add = MagicMock()
+        service.order_item_repo.add = MagicMock()
+        service.order_subitem_repo.add = MagicMock()
+        # No diag attribute — simulates driver without structured metadata
+        exc = IntegrityError("integrity violation", None, None)
+        mock_db.commit = MagicMock(side_effect=exc)
+        with patch(
+            "src.core.orders.services.generate_cart_fingerprint",
+            return_value="fp-abc",
+        ):
+            current_user = _make_current_user("user-1")
+            with pytest.raises(IntegrityError):
+                service.create_order_from_cart(
+                    "cart-1", current_user, idempotency_key="key-123"
+                )
 
 
 # -----------------------------------------------------------------------
