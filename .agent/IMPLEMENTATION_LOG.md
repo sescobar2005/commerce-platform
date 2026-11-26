@@ -1492,6 +1492,21 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Field | Value |
 |-------|-------|
 | Date | 2026-11-25 |
+| Phase | Phase 2 (Database Stabilization) - Orders Unit 2b.3: CommissionRepository |
+| Completed unit | Orders repository layer - CommissionRepository |
+| Files affected | `back/src/core/orders/repositories.py` (modified), `back/src/core/orders/tests/test_commission_repository_unit.py` (new) |
+| Repository class | CommissionRepository |
+| CommissionRepository methods | get_by_id(commission_id), get_by_seller_id(seller_id, skip, limit), get_by_order_subitem_id(order_subitem_id), add(commission), delete(commission) |
+| Transaction rules | No commit()/rollback()/refresh() in repositories. Service layer owns transaction boundaries. |
+| Tests or checks | 8/8 commission repository tests pass; full suite: 435 passed, 0 failed, 9 skipped |
+| Commit hash | `7ce7207` |
+| Observations | Follows CartRepository conventions without commit()/rollback()/refresh() methods. CommissionRepository.get_by_id retrieves commission by ID. CommissionRepository.get_by_seller_id supports pagination (skip/limit) and seller isolation. CommissionRepository.get_by_order_subitem_id retrieves commission by subitem ID. All persistence via self.db.add()/self.db.delete() only. |
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-25 |
 | Phase | Phase 2 (Database Stabilization) - Orders Unit 2b.2: PaymentRepository |
 | Completed unit | Orders repository layer - PaymentRepository |
 | Files affected | `back/src/core/orders/repositories.py` (modified), `back/src/core/orders/tests/test_payment_repository_unit.py` (new) |

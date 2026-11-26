@@ -58,6 +58,7 @@ This unit builds on the completed authentication module, seller module, product 
 | Orders Unit 2a: Order and OrderItem Repositories | Complete (commit `b777629`) |
 | Orders Unit 2b.1: OrderSubitemRepository | Complete (commit `1f9c221`) |
 | Orders Unit 2b.2: PaymentRepository | Complete (commit `6d55817`) |
+| Orders Unit 2b.3: CommissionRepository | Complete (commit `7ce7207`) |
 | Local PostgreSQL instance | Provisioned |
 | Development database (`plataforma_comercio_dev`) | Created and migrated |
 | `DATABASE_URL` configured in `back/.env` | Configured |
@@ -85,9 +86,9 @@ This unit builds on the completed authentication module, seller module, product 
 
 ## Next Recommended Implementation Unit
 
-**Orders Unit 2b.3: CommissionRepository**
+**Orders Unit 2b.4: ProductInventoryRepository**
 
-Create CommissionRepository:
-- CommissionRepository: get_by_id, get_by_seller_id, get_by_order_subitem_id, add, delete
+Create ProductInventoryRepository:
+- ProductInventoryRepository: lock_products(product_ids), check_available_stock(product_id, quantity), reserve_quantity(product_id, quantity), release_reservation(product_id, quantity), confirm_consumption(product_id, quantity)
 
 Then implement OrderService with transaction-boundary management (commit/rollback at service layer, not repository).

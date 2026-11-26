@@ -213,5 +213,22 @@ Database infrastructure (commits `79367fd`, `c6752fd`, `ba13a24`, `b586e55`, `19
 | Test results | 8/8 payment repository tests pass; full suite: 427 passed, 0 failed, 9 skipped |
 | Commit hash | `6d55817` |
 | Observations | Follows CartRepository conventions without commit()/rollback()/refresh() methods. PaymentRepository.get_by_id retrieves payment by ID. PaymentRepository.get_by_order_id supports querying all payments for an order. PaymentRepository.get_by_order_and_idempotency_key scopes lookup by both order_id and idempotency_key. All persistence via self.db.add()/self.db.delete() only. |
+| Last updated | 2026-11-25 |
+
+### Orders Unit 2b.3: CommissionRepository (commit 7ce7207)
+
+| Field | Value |
+|-------|-------|
+| Completed unit | Orders repository layer - CommissionRepository |
+| Files affected | ack/src/core/orders/repositories.py (modified), ack/src/core/orders/tests/test_commission_repository_unit.py (new) |
+| Repository class | CommissionRepository |
+| CommissionRepository methods | get_by_id(commission_id), get_by_seller_id(seller_id, skip, limit), get_by_order_subitem_id(order_subitem_id), add(commission), delete(commission) |
+| Transaction rules | No commit()/rollback()/refresh() in repositories. Service layer owns transaction boundaries. |
+| Test results | 8/8 commission repository tests pass; full suite: 435 passed, 0 failed, 9 skipped |
+| Commit hash | 7ce7207 |
+| Observations | Follows CartRepository conventions without commit()/rollback()/refresh() methods. CommissionRepository.get_by_id retrieves commission by ID. CommissionRepository.get_by_seller_id supports pagination (skip/limit) and seller isolation. CommissionRepository.get_by_order_subitem_id retrieves commission by subitem ID. All persistence via self.db.add()/self.db.delete() only. |
+
+
+
 
 
