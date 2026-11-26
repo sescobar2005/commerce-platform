@@ -36,7 +36,7 @@
 - Full suite: 505 passed, 0 failed, 9 skipped.
 - PostgreSQL row-lock semantics NOT verified (SQLite only); documented limitation.
 
-## Orders Unit 3a.4 — Orders exceptions and fingerprint utility — Complete (commit pending)
+## Orders Unit 3a.4 — Orders exceptions and fingerprint utility — Complete (commit `f5e9065`)
 
 **Orders exceptions (`back/src/core/orders/exceptions.py`) — Complete.**
 - `OrderError(Exception)` — base.
@@ -60,6 +60,24 @@
 - Added focused unit tests (`test_order_exceptions_and_fingerprint_unit.py`): 28/28 pass.
 - Full suite: 533 passed, 0 failed, 9 skipped.
 
-**Next: Unit 3a.5 — OrderService creation flow**
-- Implement `OrderService.create_order_from_cart()` only, per approved transaction sequence.
-- Add focused unit and integration tests.
+## Orders Unit 3a.5 — OrderService creation flow — Complete (commit pending)
+
+**OrderService.create_order_from_cart() — Complete.**
+- `back/src/core/orders/services.py` — full transactional order creation flow.
+- Transaction boundary owned by service layer (commit once, rollback on any failure).
+- Cart row locked via `CartRepository.get_by_id_for_update()` before any item access.
+- Products locked in ascending order via `ProductInventoryRepository.lock_products()`.
+- Seller IDs resolved via `StoreRepository.get_seller_ids()` (bulk, no N+1).
+- Inventory reserved via `ProductInventoryRepository.reserve_quantity()`.
+- All monetary calculations use `Decimal`, never `float`.
+- `CartItem.price_at_time` used as authoritative price snapshot.
+- Cart remains intact after successful order creation.
+- Idempotency: same user+key+cart+fingerprint returns existing order; changed cart/fingerprint raises `IdempotencyConflictError`.
+- Concurrent IntegrityError on `(user_id, idempotency_key)` caught, rolled back, re-queried, fingerprint compared.
+- No Payment or Commission creation.
+- No cart clearing.
+- 27 unit + integration tests (mock-based + SQLite).
+- Full suite: 560 passed, 0 failed, 9 skipped.
+- PostgreSQL concurrency tests NOT run (no live PostgreSQL database available).
+
+**All Orders Unit 3a work is complete.** No further units in scope for this session.

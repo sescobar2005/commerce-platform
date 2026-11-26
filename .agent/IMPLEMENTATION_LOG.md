@@ -1596,5 +1596,27 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Invalid input | Non-Decimal monetary values raise ValueError |
 | Transaction rules | N/A — no database operations in exceptions or fingerprint utility |
 | Tests or checks | 28/28 exception + fingerprint tests pass; full suite: 533 passed, 0 failed, 9 skipped |
-| Commit hash | Pending |
+| Commit hash | `f5e9065` |
 | Observations | Cart exceptions NOT reused; Orders exceptions are independent. No routers, migrations, or OrderService implemented in this unit. Fingerprint verified deterministic under item reordering.
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-26 |
+| Phase | Phase 2 (Database Stabilization) - Orders Unit 3a.5: OrderService.create_order_from_cart() |
+| Completed unit | OrderService with full transactional order creation flow |
+| Files affected | `back/src/core/orders/services.py` (new), `back/src/core/orders/tests/test_order_service_unit.py` (new) |
+| Service class | OrderService |
+| Service method | create_order_from_cart(cart_id, current_user, idempotency_key=None) -> Order |
+| Transaction boundary | Service layer owns commit()/rollback(). No commit/rollback/refresh in repositories. Commit exactly once on success. Rollback on any failure. |
+| Cart locking | CartRepository.get_by_id_for_update() — SELECT ... FOR UPDATE on Cart row. Lock held until commit/rollback. |
+| Product locking | ProductInventoryRepository.lock_products() — ascending product_id order, deduplicated. |
+| Seller resolution | StoreRepository.get_seller_ids() — bulk lookup, no N+1. |
+| Inventory reservation | ProductInventoryRepository.reserve_quantity() — within same transaction. |
+| Monetary calculations | Decimal throughout. CartItem.price_at_time as price snapshot. Never float. |
+| Idempotency | (user_id, idempotency_key) unique constraint. Same key+cart+fingerprint returns existing order. Changed cart/fingerprint raises IdempotencyConflictError. Concurrent IntegrityError caught, rolled back, re-queried, fingerprint compared. |
+| Out of scope | No Payment/Commission creation. No cart clearing. No cancellation/status transitions. No routers. |
+| Tests or checks | 27/27 unit + integration tests pass (mock-based + SQLite integration); full suite: 560 passed, 0 failed, 9 skipped |
+| Commit hash | Pending |
+| Observations | SQLite integration tests verify database transaction behavior but do not prove PostgreSQL row-lock semantics. No live PostgreSQL database available for concurrency tests. Cart remains intact after successful order creation (verified in tests).

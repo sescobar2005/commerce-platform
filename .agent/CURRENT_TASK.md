@@ -5,7 +5,7 @@
 | Field | Value |
 |-------|-------|
 | Current phase | Phase 2 (Database Stabilization) → Orders Unit 3a |
-| Current task | Orders Unit 3a.4 — Orders exceptions and fingerprint utility (committed) → Unit 3a.5 pending |
+| Current task | Orders Unit 3a.5 — OrderService.create_order_from_cart() (committed) — All Orders Unit 3a work complete |
 | Objective | Implement OrderService creation flow for the Orders module, starting with database migration (source_cart_id, request_fingerprint columns), StoreRepository, cart locking, exceptions/fingerprint utility, and OrderService.create_order_from_cart() |
 | Scope | `back/src/core/models/cart.py`, `back/src/core/models/__init__.py`, `back/alembic/env.py`, `back/alembic/versions/7f3a1e2c4d8b_add_cart_and_cart_item_tables.py`, `back/.gitignore`, `back/tests/test_cart_models_unit.py` |
 | Files involved | `back/src/main.py`, `back/src/core/cart/__init__.py`, `back/src/core/cart/schemas.py`, `back/src/core/cart/router.py`, `back/src/core/models/cart.py`, `back/src/core/models/__init__.py`, `back/alembic/env.py`, `back/alembic/versions/7f3a1e2c4d8b_add_cart_and_cart_item_tables.py`, `back/.gitignore`, `back/tests/test_cart_models_unit.py`, `back/tests/test_cart_unit.py`, `back/tests/test_cart_item_unit.py`, `back/tests/test_cart_update_delete_unit.py` |
