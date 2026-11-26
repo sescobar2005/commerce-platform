@@ -334,3 +334,82 @@ class PaymentRepository:
         The caller is responsible for calling commit() on the session.
         """
         self.db.delete(payment)
+
+
+class CommissionRepository:
+    """Repository for Commission persistence operations.
+
+    All database interactions related to Commission entities are encapsulated here.
+    """
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    def get_by_id(self, commission_id: str) -> Optional[Commission]:
+        """Retrieve a commission by its ID.
+
+        Args:
+            commission_id: The unique commission identifier.
+
+        Returns:
+            The Commission if found, None otherwise.
+        """
+        return (
+            self.db.query(Commission)
+            .filter(Commission.commission_id == commission_id)
+            .first()
+        )
+
+    def get_by_seller_id(
+        self, seller_id: str, skip: int = 0, limit: int = 20
+    ) -> List[Commission]:
+        """Retrieve all commissions belonging to a seller, with pagination.
+
+        Args:
+            seller_id: The seller identifier.
+            skip: Number of records to skip (for pagination).
+            limit: Maximum number of records to return.
+
+        Returns:
+            A list of Commission objects belonging to the seller,
+            ordered by created_at descending (newest first).
+        """
+        return (
+            self.db.query(Commission)
+            .filter(Commission.seller_id == seller_id)
+            .order_by(Commission.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+
+    def get_by_order_subitem_id(
+        self, order_subitem_id: str
+    ) -> Optional[Commission]:
+        """Retrieve a commission by its order subitem ID.
+
+        Args:
+            order_subitem_id: The order subitem identifier.
+
+        Returns:
+            The Commission if found, None otherwise.
+        """
+        return (
+            self.db.query(Commission)
+            .filter(Commission.order_subitem_id == order_subitem_id)
+            .first()
+        )
+
+    def add(self, commission: Commission) -> None:
+        """Add a new commission to the session.
+
+        The caller is responsible for calling commit() on the session.
+        """
+        self.db.add(commission)
+
+    def delete(self, commission: Commission) -> None:
+        """Delete a commission from the session.
+
+        The caller is responsible for calling commit() on the session.
+        """
+        self.db.delete(commission)
