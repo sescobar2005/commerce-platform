@@ -1543,5 +1543,20 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Model changes | Added `source_cart_id: String(36)` nullable, no FK to carts; Added `request_fingerprint: String(64)` nullable, no FK |
 | Migration | Revision `0e9ed90dea55`, parent `8e7f6d5c4b3a`. Adds both nullable columns to `orders` table. Downgrade drops both columns. Migration created but NOT applied to any database. |
 | Tests or checks | 14/14 model column tests pass; 12/12 migration tests pass; full suite: 483 passed, 0 failed, 9 skipped |
-| Commit hash | Pending |
+| Commit hash | `241b4a5` |
 | Observations | `source_cart_id` must NOT have a foreign key to `carts` (approved decision). No indexes added (not justified by query patterns yet). Alembic `upgrade head --sql` verified valid SQL generating only ALTER TABLE ADD COLUMN for both columns. Cart remains intact after order creation (to be enforced in OrderService Unit 3a.5).
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-26 |
+| Phase | Phase 2 (Database Stabilization) - Orders Unit 3a.2: StoreRepository |
+| Completed unit | StoreRepository with get_seller_id and bulk get_seller_ids |
+| Files affected | `back/src/core/orders/repositories.py` (modified), `back/src/core/orders/tests/test_store_repository_unit.py` (new) |
+| Repository class | StoreRepository |
+| StoreRepository methods | get_seller_id(store_id) -> Optional[str]; get_seller_ids(store_ids) -> Dict[str, str] |
+| Transaction rules | No commit()/rollback()/refresh() in repositories. Service layer owns transaction boundaries. |
+| Tests or checks | 10/10 store repository tests pass; full suite: 493 passed, 0 failed, 9 skipped |
+| Commit hash | Pending |
+| Observations | Bulk get_seller_ids avoids N+1 queries when resolving sellers for multiple products. Single get_seller_id returns None for nonexistent stores. No transaction management in repository.

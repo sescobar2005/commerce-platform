@@ -1,6 +1,6 @@
 # NEXT_STEPS.md
 
-## Orders Unit 3a.1 — OrderService Foundation and Order Creation — Complete (commit pending)
+## Orders Unit 3a.1 — OrderService Foundation and Order Creation — Complete (commit `241b4a5`)
 
 **Database migration and model updates — Complete.**
 - Added `source_cart_id: String(36)` (nullable, no FK) to `Order` model in `back/src/core/models/order.py`.
@@ -10,11 +10,16 @@
 - Added model unit tests (`test_order_source_cart_fingerprint_unit.py`) and migration unit tests (`test_order_migration_unit.py`).
 - Full suite: 483 passed, 9 skipped, 0 failed.
 
-**Next: Unit 3a.2 — StoreRepository**
-- Implement `StoreRepository.get_seller_id()` or equivalent bulk method to retrieve seller IDs for stores associated with order products.
-- Avoid N+1 queries with bulk lookup.
-- Add focused unit tests.
-- Commit independently.
+## Orders Unit 3a.2 — StoreRepository — Complete (commit pending)
+
+**StoreRepository — Complete.**
+- Added `StoreRepository` to `back/src/core/orders/repositories.py` with:
+  - `get_seller_id(store_id)` — single store lookup, returns seller ID or None.
+  - `get_seller_ids(store_ids)` — bulk lookup returning dict mapping store_id -> seller_id, avoids N+1.
+- Added Store model import to repositories.py.
+- No commit/rollback/refresh methods (transaction boundary owned by service layer).
+- Added focused unit tests (`test_store_repository_unit.py`): 10/10 pass.
+- Full suite: 493 passed, 0 failed, 9 skipped.
 
 **Next: Unit 3a.3 — Cart concurrency coordination**
 - Add parent Cart row locking (`with_for_update()`) to `CartService.add_item()`, `update_item()`, `remove_item()`.

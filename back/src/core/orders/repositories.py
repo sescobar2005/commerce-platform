@@ -20,6 +20,7 @@ from src.core.models.order import (
     Payment,
 )
 from src.core.models.product import Product
+from src.core.models.store import Store
 
 
 class OrderRepository:
@@ -567,3 +568,63 @@ class ProductInventoryRepository:
 
         product.stock -= quantity
         product.reserved_quantity -= quantity
+
+
+class StoreRepository:
+    """Repository for Store persistence operations.
+
+    Provides data access operations for Store entities, including
+    efficient resolution of seller IDs for stores associated with
+    order products. Used by OrderService to group order items by
+    seller without N+1 queries.
+
+    Repositories do NOT manage transactions (commit/rollback/refresh).
+    The service layer owns transaction boundaries.
+    """
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    def get_seller_id(self, store_id: str) -> Optional[str]:
+        """Retrieve the seller ID for a single store.
+
+        Args:
+            store_id: The store identifier.
+
+        Returns:
+            The seller ID if the store exists, None otherwise.
+        """
+        store = (
+            self.db.query(Store)
+            .filter(Store.store_id == store_id)
+            .first()
+        )
+        if store is None:
+            return None
+        return str(store.seller_id)
+
+    def get_seller_ids(self, store_ids: List[str]) -> dict:
+        """Retrieve seller IDs for multiple stores in a single query.
+
+        Avoids N+1 queries when resolving sellers for multiple products
+        belonging to different stores. Returns a mapping of store ID to
+        seller ID for all stores found. Stores that do not exist are
+        omitted from the result.
+
+        Args:
+            store_ids: List of store identifiers to look up.
+
+        Returns:
+            A dict mapping store_id -> seller_id for found stores.
+        """
+        unique_ids = list(dict.fromkeys(store_ids))
+        if not unique_ids:
+            return {}
+
+        stores = (
+            self.db.query(Store.store_id, Store.seller_id)
+            .filter(Store.store_id.in_(unique_ids))
+            .all()
+        )
+
+        return {str(store_id): str(seller_id) for store_id, seller_id in stores}
