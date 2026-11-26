@@ -5,11 +5,12 @@ actual repository behavior without requiring a PostgreSQL database.
 """
 
 import pytest
+from datetime import datetime, timezone
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from src.core.database import Base
-from src.core.models.order import Order, OrderItem
+from src.core.models.order import Order, OrderItem, OrderSubitem
 from src.core.orders.repositories import OrderRepository, OrderItemRepository
 
 
@@ -330,3 +331,181 @@ class TestOrderRepository:
         assert result is None
 
         session.close()
+
+    def test_get_by_id_returns_complete_items_collection(self):
+        """get_by_id should eagerly load ALL items (not just first row).
+
+        Uses Session.query() legacy API which internally merges joined
+        collection rows. Verifies .unique() is NOT required for Query API.
+        """
+        session = _create_session()
+        repo = OrderRepository(session)
+
+        order = Order(
+            order_id="order-1",
+            user_id="user-1",
+            total_amount=60.00,
+        )
+        repo.add(order)
+        session.flush()
+
+        item1 = OrderItem(
+            order_item_id="item-1",
+            order_id="order-1",
+            product_id="product-1",
+            seller_id="seller-1",
+            product_name="Product 1",
+            product_sku="SKU-001",
+            quantity=2,
+            price=10.00,
+        )
+        item2 = OrderItem(
+            order_item_id="item-2",
+            order_id="order-1",
+            product_id="product-2",
+            seller_id="seller-1",
+            product_name="Product 2",
+            product_sku="SKU-002",
+            quantity=3,
+            price=20.00,
+        )
+        session.add(item1)
+        session.add(item2)
+        session.flush()
+
+        result = repo.get_by_id("order-1")
+        assert result is not None
+        assert len(result.items) == 2
+        item_ids = {i.order_item_id for i in result.items}
+        assert item_ids == {"item-1", "item-2"}
+
+        session.close()
+
+    def test_get_by_id_returns_complete_subitems_collection(self):
+        """get_by_id should eagerly load ALL subitems (not just first row).
+
+        Uses Session.query() legacy API which internally merges joined
+        collection rows. Verifies .unique() is NOT required for Query API.
+        """
+        session = _create_session()
+        repo = OrderRepository(session)
+
+        order = Order(
+            order_id="order-1",
+            user_id="user-1",
+            total_amount=60.00,
+        )
+        repo.add(order)
+        session.flush()
+
+        subitem1 = OrderSubitem(
+            order_subitem_id="subitem-1",
+            order_id="order-1",
+            seller_id="seller-1",
+            subtotal=20.00,
+            status="pending",
+        )
+        subitem2 = OrderSubitem(
+            order_subitem_id="subitem-2",
+            order_id="order-1",
+            seller_id="seller-2",
+            subtotal=40.00,
+            status="pending",
+        )
+        session.add(subitem1)
+        session.add(subitem2)
+        session.flush()
+
+        result = repo.get_by_id("order-1")
+        assert result is not None
+        assert len(result.subitems) == 2
+        subitem_ids = {s.order_subitem_id for s in result.subitems}
+        assert subitem_ids == {"subitem-1", "subitem-2"}
+
+        session.close()
+
+    def test_get_by_id_returns_both_collections_complete(self):
+        """get_by_id should return complete items AND subitems together."""
+        session = _create_session()
+        repo = OrderRepository(session)
+
+        order = Order(
+            order_id="order-1",
+            user_id="user-1",
+            total_amount=60.00,
+        )
+        repo.add(order)
+        session.flush()
+
+        item = OrderItem(
+            order_item_id="item-1",
+            order_id="order-1",
+            product_id="product-1",
+            seller_id="seller-1",
+            product_name="Product 1",
+            product_sku="SKU-001",
+            quantity=1,
+            price=10.00,
+        )
+        subitem = OrderSubitem(
+            order_subitem_id="subitem-1",
+            order_id="order-1",
+            seller_id="seller-1",
+            subtotal=10.00,
+            status="pending",
+        )
+        session.add(item)
+        session.add(subitem)
+        session.flush()
+
+        result = repo.get_by_id("order-1")
+        assert result is not None
+        assert len(result.items) == 1
+        assert len(result.subitems) == 1
+        assert result.items[0].product_name == "Product 1"
+        assert result.subitems[0].subtotal == 10.00
+
+        session.close()
+
+    def test_get_by_user_id_deterministic_ordering_same_created_at(self):
+        """get_by_user_id should return stable order when created_at ties.
+
+        Orders sharing the same created_at are ordered by order_id desc
+        as a stable secondary sort key.
+        """
+        session = _create_session()
+        repo = OrderRepository(session)
+
+        same_time = datetime(2024, 1, 15, 10, 0, 0, tzinfo=timezone.utc)
+
+        order_a = Order(
+            order_id="order-a",
+            user_id="user-1",
+            total_amount=10.00,
+            created_at=same_time,
+        )
+        order_b = Order(
+            order_id="order-b",
+            user_id="user-1",
+            total_amount=20.00,
+            created_at=same_time,
+        )
+        order_c = Order(
+            order_id="order-c",
+            user_id="user-1",
+            total_amount=30.00,
+            created_at=same_time,
+        )
+        repo.add(order_a)
+        repo.add(order_b)
+        repo.add(order_c)
+        session.flush()
+
+        results = repo.get_by_user_id("user-1")
+        assert len(results) == 3
+        # order_id desc: order-c, order-b, order-a
+        result_ids = [o.order_id for o in results]
+        assert result_ids == ["order-c", "order-b", "order-a"]
+
+        session.close()
+
