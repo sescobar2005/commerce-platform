@@ -72,40 +72,25 @@
 - `back/src/core/orders/tests/test_order_repositories_unit.py` — 18/18 passed (15 existing + 4 new)
 - Full suite: 623 passed, 0 failed, 9 skipped (PostgreSQL integration tests skipped)
 
-## Orders Unit 3b.3 — HTTP Exception Mapping — Commit `c24ba5e` + Security Fixes `a990633`, `be317f2`
+## Orders Unit 3b.4 — Orders API Router — Commit `47d9fc3`
 
 ### Completed
-- `back/src/core/orders/router.py` — `_handle_service_error()`:
-  - OrderNotFoundError, OrderOwnershipError, OrderItemNotFoundError,
-    ProductNotFoundError, ProductInactiveError -> 404 NOT FOUND
-    (ownership/inactive errors return generic 'not found' to avoid
-    information disclosure)
-  - InsufficientStockError -> 409 CONFLICT
-  - IdempotencyConflictError -> 409 CONFLICT 'Idempotency conflict'
-    (generic — idempotency key and conflicting order ID NOT exposed)
-  - OrderError fallback -> 400 BAD_REQUEST 'Order operation failed'
-    (generic — product IDs, prices, store IDs NOT exposed)
-  - Non-OrderError exceptions are re-raised unchanged (no broad catch)
-- No route definitions in this module - designed to be reused by the
-  future Orders router.
-- `back/src/core/orders/tests/test_order_http_errors_unit.py` — 27 tests
-  (21 original + 6 new security regression tests)
-
-### Security corrections
-- Correction R-1 (commit `a990633`): IdempotencyConflictError detail
-  changed from str(exc) to generic 'Idempotency conflict' — prevents
-  exposure of client-provided idempotency keys and other users' order IDs
-- Correction R-2 (commit `a990633`): OrderError fallback detail changed
-  from str(exc) to generic 'Order operation failed' — prevents exposure
-  of product IDs, price snapshots, and store IDs
-- Correction R-3 (commit `be317f2`): Updated existing tests to assert
-  generic messages; added 6 new regression tests with sentinel values to
-  detect accidental information disclosure
+- `back/src/core/orders/router.py` — Orders HTTP router with 5 endpoints:
+  - POST /orders/ — Create order from cart (201 on success, 200 on idempotent retry)
+  - GET /orders/{order_id} — Retrieve order by ID (buyer or admin only)
+  - GET /orders/ — List authenticated user's orders (paginated)
+  - GET /orders/{order_id}/items — Retrieve order line items
+  - GET /orders/{order_id}/subitems — Retrieve order seller subitems
+- `back/src/main.py` — Registered orders router under /api/v1 prefix
+- UUID validation returns 404 to avoid information disclosure
+- ORM objects converted to Pydantic response schemas before returning
+- Decimal monetary values serialize as decimal strings
+- Reuses _handle_service_error() for consistent exception-to-HTTP mapping
 
 ### Test results
-- Focused tests: 27/27 passed
-- Full suite: 650 passed, 0 failed, 9 skipped (PostgreSQL integration tests skipped)
+- `back/src/core/orders/tests/test_order_router_unit.py` — 20/20 passed
+- Full suite: 670 passed, 0 failed, 9 skipped (PostgreSQL integration tests skipped)
 
-**Next: Unit 3b.4 — Orders router** (POST /, GET /{order_id}, GET /,
-GET /{order_id}/items, GET /{order_id}/subitems, using
-_handle_service_error() for error translation).
+**All Orders Unit 3b work is complete (3b.1 through 3b.4).**
+
+**Next: PostgreSQL row-lock semantics verification** (SQLite only, no live PostgreSQL available) or proceed to Unit 3b.5 if authorized.

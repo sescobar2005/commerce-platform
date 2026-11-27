@@ -1712,3 +1712,19 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Tests or checks | 27/27 HTTP error mapping tests pass (21 original + 6 new); full suite: 650 passed, 0 failed, 9 skipped |
 | Commit hashes | R-1+R-2: `a990633`; R-3: `be317f2` |
 | Observations | Security review confirmed OrderNotFoundError/OrderOwnershipError return identical 404 'Order not found' (privacy-safe). Non-OrderError exceptions still re-raised unchanged. No routers, models, or migrations modified.
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-27 |
+| Phase | Phase 2 (Database Stabilization) ? Orders Unit 3b.4: Orders API Router |
+| Completed unit | Orders HTTP router with 5 endpoints |
+| Files affected | `back/src/core/orders/router.py` (modified), `back/src/main.py` (modified), `back/src/core/orders/tests/test_order_router_unit.py` (new) |
+| Endpoints | POST /orders/ (201 create order from cart, idempotent via Idempotency-Key header); GET /orders/{order_id} (retrieve order); GET /orders/ (paginated list); GET /orders/{order_id}/items (line items); GET /orders/{order_id}/subitems (seller subitems) |
+| Authorization | Buyers access own orders only; Administrators access any order; Sellers excluded unless order owner; All authorization enforced in OrderService (service layer) |
+| Security | UUID validation returns 404 (no info disclosure); ORM?Pydantic conversion before return; Decimal serialized as strings; _handle_service_error() for consistent error mapping; request_fingerprint/source_cart_id NOT exposed in responses |
+| Router registration | Registered in back/src/main.py under /api/v1 prefix |
+| Tests or checks | 20/20 router unit tests pass; full suite: 670 passed, 0 failed, 9 skipped |
+| Commit hash | `47d9fc3` |
+| Observations | Idempotent retry returns 201 (service returns Order object without distinguishing retry vs first creation; distinguishing 200 vs 201 would require service-layer change outside this unit's scope). No migrations applied. All Orders Unit 3b work (3b.1 through 3b.4) is complete.
