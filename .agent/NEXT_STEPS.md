@@ -72,25 +72,39 @@
 - `back/src/core/orders/tests/test_order_repositories_unit.py` — 18/18 passed (15 existing + 4 new)
 - Full suite: 623 passed, 0 failed, 9 skipped (PostgreSQL integration tests skipped)
 
-## Orders Unit 3b.3 — HTTP Exception Mapping — Commit `c24ba5e`
+## Orders Unit 3b.3 — HTTP Exception Mapping — Commit `c24ba5e` + Security Fixes `a990633`, `be317f2`
 
 ### Completed
-- `back/src/core/orders/router.py` — new file with `_handle_service_error()`:
+- `back/src/core/orders/router.py` — `_handle_service_error()`:
   - OrderNotFoundError, OrderOwnershipError, OrderItemNotFoundError,
     ProductNotFoundError, ProductInactiveError -> 404 NOT FOUND
     (ownership/inactive errors return generic 'not found' to avoid
     information disclosure)
   - InsufficientStockError -> 409 CONFLICT
-  - IdempotencyConflictError -> 409 CONFLICT
-  - OrderError (fallback) -> 400 BAD_REQUEST
+  - IdempotencyConflictError -> 409 CONFLICT 'Idempotency conflict'
+    (generic — idempotency key and conflicting order ID NOT exposed)
+  - OrderError fallback -> 400 BAD_REQUEST 'Order operation failed'
+    (generic — product IDs, prices, store IDs NOT exposed)
   - Non-OrderError exceptions are re-raised unchanged (no broad catch)
 - No route definitions in this module - designed to be reused by the
   future Orders router.
-- `back/src/core/orders/tests/test_order_http_errors_unit.py` — 21 tests
+- `back/src/core/orders/tests/test_order_http_errors_unit.py` — 27 tests
+  (21 original + 6 new security regression tests)
+
+### Security corrections
+- Correction R-1 (commit `a990633`): IdempotencyConflictError detail
+  changed from str(exc) to generic 'Idempotency conflict' — prevents
+  exposure of client-provided idempotency keys and other users' order IDs
+- Correction R-2 (commit `a990633`): OrderError fallback detail changed
+  from str(exc) to generic 'Order operation failed' — prevents exposure
+  of product IDs, price snapshots, and store IDs
+- Correction R-3 (commit `be317f2`): Updated existing tests to assert
+  generic messages; added 6 new regression tests with sentinel values to
+  detect accidental information disclosure
 
 ### Test results
-- Focused tests: 21/21 passed
-- Full suite: 644 passed, 0 failed, 9 skipped (PostgreSQL integration tests skipped)
+- Focused tests: 27/27 passed
+- Full suite: 650 passed, 0 failed, 9 skipped (PostgreSQL integration tests skipped)
 
 **Next: Unit 3b.4 — Orders router** (POST /, GET /{order_id}, GET /,
 GET /{order_id}/items, GET /{order_id}/subitems, using

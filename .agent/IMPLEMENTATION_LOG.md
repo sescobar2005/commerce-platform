@@ -1697,3 +1697,18 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Tests or checks | 21/21 HTTP error mapping tests pass; full suite: 644 passed, 0 failed, 9 skipped |
 | Commit hash | `c24ba5e` |
 | Observations | No route definitions in this module - designed to be reused by the future Orders router (Unit 3b.4). No migrations applied.
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-27 |
+| Phase | Phase 2 (Database Stabilization) ? Orders Unit 3b.3 Security Corrections (R-1, R-2, R-3) |
+| Completed unit | HTTP exception mapping security fixes |
+| Files affected | `back/src/core/orders/router.py` (modified), `back/src/core/orders/tests/test_order_http_errors_unit.py` (modified) |
+| Correction R-1 | IdempotencyConflictError detail changed from str(exc) to generic 'Idempotency conflict' (409). Prevents exposure of client-provided idempotency keys and other users' order IDs. |
+| Correction R-2 | OrderError fallback detail changed from str(exc) to generic 'Order operation failed' (400). Prevents exposure of product IDs, price snapshots, and store IDs. |
+| Correction R-3 | Updated 2 existing tests to assert generic messages; added 6 new security regression tests with sentinel values. Tests verify: idempotency key absent, conflicting order ID absent, other user info absent, product ID absent, price absent, store ID absent, all status codes unchanged, unexpected exceptions re-raised unchanged. |
+| Tests or checks | 27/27 HTTP error mapping tests pass (21 original + 6 new); full suite: 650 passed, 0 failed, 9 skipped |
+| Commit hashes | R-1+R-2: `a990633`; R-3: `be317f2` |
+| Observations | Security review confirmed OrderNotFoundError/OrderOwnershipError return identical 404 'Order not found' (privacy-safe). Non-OrderError exceptions still re-raised unchanged. No routers, models, or migrations modified.

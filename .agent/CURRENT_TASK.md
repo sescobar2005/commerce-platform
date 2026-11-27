@@ -5,12 +5,13 @@
 | Field | Value |
 |-------|-------|
 | Current phase | Phase 2 (Database Stabilization) → Orders Unit 3b |
-| Current task | Orders Unit 3b.3 — HTTP Exception Mapping (complete) |
-| Objective | Implement OrderService creation flow for the Orders module, starting with database migration (source_cart_id, request_fingerprint columns), StoreRepository, cart locking, exceptions/fingerprint utility, OrderService.create_order_from_cart(), Order API schemas, OrderService retrieval methods, and Orders HTTP exception mapping |
-| Completed units | 3a.1 (commit `241b4a5`), 3a.2 (commit `363a36d`), 3a.3 (commit `0ecb5d4`), 3a.4 (commit `f5e9065`), 3a.5 (commit `9f5b245` includes P1+P2), P3 correction (commit `01a38ac`), 3b.1 schemas (commit `a9536a0`), 3b.2 retrieval methods (commit `2f865a7` + corrections `6de6658`, `c96b6c0`), 3b.3 HTTP exception mapping (commit `c24ba5e`) |
+| Current task | Orders Unit 3b.3 — HTTP Exception Mapping Security Corrections (complete) |
+| Objective | Implement OrderService creation flow for the Orders module, starting with database migration (source_cart_id, request_fingerprint columns), StoreRepository, cart locking, exceptions/fingerprint utility, OrderService.create_order_from_cart(), Order API schemas, OrderService retrieval methods, Orders HTTP exception mapping, and security corrections |
+| Completed units | 3a.1 (commit `241b4a5`), 3a.2 (commit `363a36d`), 3a.3 (commit `0ecb5d4`), 3a.4 (commit `f5e9065`), 3a.5 (commit `9f5b245` includes P1+P2), P3 correction (commit `01a38ac`), 3b.1 schemas (commit `a9536a0`), 3b.2 retrieval methods (commit `2f865a7` + corrections `6de6658`, `c96b6c0`), 3b.3 HTTP exception mapping (commit `c24ba5e` + security fixes `a990633`, `be317f2`) |
 | Corrections applied | P1: IntegrityError discrimination by constraint name (`uq_order_user_idempotency_key`); P2: Removed pre-try-block rollbacks; P3: Stock guard in `reserve_quantity()` |
 | 3b.2 Corrections | Correction 1: Verified `.unique()` NOT needed for `Session.query()` legacy API; added 3 integration tests proving complete items+subitems collections (commit `6de6658`); Correction 2: Added `Order.order_id.desc()` secondary sort key to `get_by_user_id()` (commit `c96b6c0`) |
-| Test results | 644 passed, 0 failed, 9 skipped (PostgreSQL integration tests skipped) |
+| 3b.3 Security Corrections | R-1: IdempotencyConflictError detail → generic 'Idempotency conflict' (409); R-2: OrderError fallback detail → generic 'Order operation failed' (400); R-3: 6 new security regression tests with sentinel values |
+| Test results | 650 passed, 0 failed, 9 skipped (PostgreSQL integration tests skipped) |
 | Pending | Unit 3b.4: Orders router (POST /, GET /{order_id}, GET /, GET /{order_id}/items, GET /{order_id}/subitems); PostgreSQL row-lock semantics verification (SQLite only, no live PostgreSQL available) |
 | Scope | `back/src/core/models/cart.py`, `back/src/core/models/__init__.py`, `back/alembic/env.py`, `back/alembic/versions/7f3a1e2c4d8b_add_cart_and_cart_item_tables.py`, `back/.gitignore`, `back/tests/test_cart_models_unit.py` |
 | Files involved | `back/src/main.py`, `back/src/core/cart/__init__.py`, `back/src/core/cart/schemas.py`, `back/src/core/cart/router.py`, `back/src/core/models/cart.py`, `back/src/core/models/__init__.py`, `back/alembic/env.py`, `back/alembic/versions/7f3a1e2c4d8b_add_cart_and_cart_item_tables.py`, `back/.gitignore`, `back/tests/test_cart_models_unit.py`, `back/tests/test_cart_unit.py`, `back/tests/test_cart_item_unit.py`, `back/tests/test_cart_update_delete_unit.py` |
