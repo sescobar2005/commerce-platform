@@ -8,12 +8,24 @@ codes, and exception translation). All business logic lives in
 in ``src.core.orders.repositories``.
 """
 
+import json
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
+from fastapi import (
+    APIRouter,
+    Body,
+    Depends,
+    Header,
+    HTTPException,
+    Query,
+    Response,
+    status,
+)
+from fastapi.responses import JSONResponse
 
 from src.core.auth.dependencies import get_current_user
+from src.core.cart.exceptions import CartNotFoundError, CartOwnershipError
 from src.core.database import get_db
 from src.core.security.schemas import CurrentUser
 from src.core.orders.schemas import (
@@ -58,7 +70,7 @@ def _handle_service_error(exc: OrderError) -> HTTPException:
     Raises:
         The original exception if it is not an OrderError subclass.
     """
-    if not isinstance(exc, OrderError):
+    if not isinstance(exc, OrderError) and not isinstance(exc, CartNotFoundError) and not isinstance(exc, CartOwnershipError):
         raise exc
     if isinstance(exc, OrderNotFoundError):
         return HTTPException(
@@ -66,6 +78,16 @@ def _handle_service_error(exc: OrderError) -> HTTPException:
             detail="Order not found",
         )
     if isinstance(exc, OrderOwnershipError):
+        return HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Order not found",
+        )
+    if isinstance(exc, CartNotFoundError):
+        return HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Order not found",
+        )
+    if isinstance(exc, CartOwnershipError):
         return HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Order not found",
@@ -120,20 +142,20 @@ def _validate_uuid(order_id: str) -> None:
 
 @router.post(
     "/",
-    response_model=OrderResponse,
-    status_code=status.HTTP_201_CREATED,
     summary="Create an order from a cart",
     description="Create an order from the authenticated user's cart. "
-    "The idempotency key is supplied via the Idempotency-Key header.",
+    "The idempotency key is supplied via the Idempotency-Key header. "
+    "Returns HTTP 201 for a newly created order, HTTP 200 for a "
+    "compatible idempotent retry.",
 )
 def create_order(
-    request: OrderCreateRequest,
+    cart_id: UUID = Body(...),
     idempotency_key: Optional[str] = Header(
         None, alias="Idempotency-Key"
     ),
     db=Depends(get_db),
     current_user: CurrentUser = Depends(get_current_user),
-) -> OrderResponse:
+) -> JSONResponse:
     """Create an order from a cart.
 
     Converts the authenticated user's cart into an order. All monetary
@@ -145,7 +167,7 @@ def create_order(
     idempotent retry, returns the existing order with HTTP 200.
 
     Args:
-        request: Order creation request containing cart_id.
+        cart_id: Cart identifier to convert into an order.
         idempotency_key: Optional client idempotency key from header.
         db: Database session dependency.
         current_user: Authenticated user from JWT token.
@@ -168,12 +190,20 @@ def create_order(
         )
     service = OrderService(db)
     try:
-        order = service.create_order_from_cart(
-            str(request.cart_id), current_user, idempotency_key
+        result = service.create_order_from_cart(
+            str(cart_id), current_user, idempotency_key
         )
-    except OrderError as exc:
+    except (OrderError, CartNotFoundError, CartOwnershipError) as exc:
         raise _handle_service_error(exc)
-    return OrderResponse.model_validate(order)
+    order_response = OrderResponse.model_validate(result.order)
+    response = Response()
+    response.status_code = (
+        status.HTTP_201_CREATED if result.is_new else status.HTTP_200_OK
+    )
+    return JSONResponse(
+        content=json.loads(order_response.model_dump_json()),
+        status_code=response.status_code,
+    )
 
 
 @router.get(

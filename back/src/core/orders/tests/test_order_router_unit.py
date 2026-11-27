@@ -24,11 +24,12 @@ Tests use mocks for OrderService methods and verify:
 from datetime import datetime
 from decimal import Decimal
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, patch
 from uuid import UUID, uuid4
 
 import pytest
 from fastapi import HTTPException
+from fastapi.responses import JSONResponse
 from starlette import status
 
 from src.core.orders.router import (
@@ -47,6 +48,7 @@ from src.core.orders.schemas import (
     OrderSubitemResponse,
     OrderSummaryResponse,
 )
+from src.core.orders.services import OrderCreationResult
 from src.core.orders.exceptions import (
     IdempotencyConflictError,
     InsufficientStockError,
@@ -190,8 +192,8 @@ class TestUuidValidation:
 class TestCreateOrder:
     """Tests for POST /orders/ endpoint."""
 
-    def test_create_order_success_returns_order_response(self):
-        """Successful order creation returns an OrderResponse."""
+    def test_create_order_success_returns_201(self):
+        """Successful order creation returns HTTP 201."""
         mock_db = MagicMock()
         mock_current_user = _make_current_user(user_id="user-1")
 
@@ -200,29 +202,32 @@ class TestCreateOrder:
             user_id=_TEST_USER_ID,
             total_amount=Decimal("20.00"),
         )
+        creation_result = OrderCreationResult(order=order_orm, is_new=True)
 
         with patch(
             "src.core.orders.router.OrderService"
         ) as mock_service_class:
             mock_service = MagicMock()
-            mock_service.create_order_from_cart.return_value = order_orm
+            mock_service.create_order_from_cart.return_value = creation_result
             mock_service_class.return_value = mock_service
 
             response = create_order(
-                request=OrderCreateRequest(cart_id=_TEST_CART_ID),
+                cart_id=str(_TEST_CART_ID),
                 idempotency_key=None,
                 db=mock_db,
                 current_user=mock_current_user,
             )
 
-        assert isinstance(response, OrderResponse)
-        assert response.order_id == _TEST_ORDER_ID
-        assert response.user_id == _TEST_USER_ID
-        assert response.total_amount == Decimal("20.00")
-        assert response.status == "pending"
-        assert response.payment_status == "pending"
+        assert isinstance(response, JSONResponse)
+        assert response.status_code == status.HTTP_201_CREATED
+        import json
+        body = json.loads(response.body)
+        assert body["order_id"] == str(_TEST_ORDER_ID)
+        assert body["user_id"] == str(_TEST_USER_ID)
+        assert body["total_amount"] == "20.00"
+        assert body["status"] == "pending"
+        assert body["payment_status"] == "pending"
 
-        # Verify service was called correctly
         mock_service.create_order_from_cart.assert_called_once_with(
             str(_TEST_CART_ID), mock_current_user, None
         )
@@ -232,20 +237,27 @@ class TestCreateOrder:
         mock_db = MagicMock()
         mock_current_user = _make_current_user(user_id="user-1")
         order_orm = _make_order_orm(order_id=_TEST_ORDER_ID, user_id=_TEST_USER_ID)
+        creation_result = OrderCreationResult(order=order_orm, is_new=False)
 
         with patch(
             "src.core.orders.router.OrderService"
         ) as mock_service_class:
             mock_service = MagicMock()
-            mock_service.create_order_from_cart.return_value = order_orm
+            mock_service.create_order_from_cart.return_value = creation_result
             mock_service_class.return_value = mock_service
 
-            create_order(
-                request=OrderCreateRequest(cart_id=_TEST_CART_ID),
+            result = create_order(
+                cart_id=str(_TEST_CART_ID),
                 idempotency_key="key-123",
                 db=mock_db,
                 current_user=mock_current_user,
             )
+
+        assert isinstance(result, JSONResponse)
+        assert result.status_code == status.HTTP_200_OK
+        import json
+        body = json.loads(result.body)
+        assert body["order_id"] == str(_TEST_ORDER_ID)
 
         mock_service.create_order_from_cart.assert_called_once_with(
             str(_TEST_CART_ID), mock_current_user, "key-123"
@@ -267,7 +279,7 @@ class TestCreateOrder:
 
             with pytest.raises(HTTPException) as exc_info:
                 create_order(
-                    request=OrderCreateRequest(cart_id=_TEST_CART_ID),
+                    cart_id=str(_TEST_CART_ID),
                     idempotency_key=None,
                     db=mock_db,
                     current_user=mock_current_user,
@@ -292,8 +304,8 @@ class TestCreateOrder:
 
             with pytest.raises(HTTPException) as exc_info:
                 create_order(
-                    request=OrderCreateRequest(cart_id=_TEST_CART_ID),
-                    idempotency_key="key-123",
+                    cart_id=str(_TEST_CART_ID),
+                    idempotency_key=None,
                     db=mock_db,
                     current_user=mock_current_user,
                 )
@@ -317,7 +329,7 @@ class TestCreateOrder:
 
             with pytest.raises(HTTPException) as exc_info:
                 create_order(
-                    request=OrderCreateRequest(cart_id=_TEST_CART_ID),
+                    cart_id=str(_TEST_CART_ID),
                     idempotency_key=None,
                     db=mock_db,
                     current_user=mock_current_user,
@@ -404,7 +416,7 @@ class TestGetOrder:
         mock_db = MagicMock()
         mock_current_user = _make_current_user(user_id="user-1")
 
-        order_orm = _make_order_orm(order_id=_TEST_ORDER_ID, user_id=UUID("22222222-2222-2222-2222-222222222223"))
+        order_orm = _make_order_orm(order_id=_TEST_ORDER_ID, user_id=_TEST_USER_ID)
 
         with patch(
             "src.core.orders.router.OrderService"
@@ -544,6 +556,7 @@ class TestListOrders:
                 )
 
         assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
+        assert exc_info.value.detail == "Order operation failed"
 
 
 # -----------------------------------------------------------------------
@@ -560,7 +573,10 @@ class TestGetOrderItems:
         mock_current_user = _make_current_user(user_id="user-1")
 
         item_orm = _make_order_item_orm(
+            order_item_id=_TEST_ORDER_ITEM_ID,
             order_id=_TEST_ORDER_ID,
+            product_id=_TEST_PRODUCT_ID,
+            seller_id=_TEST_SELLER_ID,
         )
 
         with patch(
@@ -601,7 +617,9 @@ class TestGetOrderSubitems:
         mock_current_user = _make_current_user(user_id="user-1")
 
         subitem_orm = _make_order_subitem_orm(
+            order_subitem_id=_TEST_ORDER_SUBITEM_ID,
             order_id=_TEST_ORDER_ID,
+            seller_id=_TEST_SELLER_ID,
         )
 
         with patch(
