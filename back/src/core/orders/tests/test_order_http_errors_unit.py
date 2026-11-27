@@ -184,19 +184,54 @@ class TestIdempotencyConflictError:
         http_exc = _handle_service_error(exc)
         assert http_exc.status_code == status.HTTP_409_CONFLICT
 
-    def test_detail_contains_conflict_message(self):
-        """Detail contains the conflict message."""
+    def test_detail_is_generic_no_conflict_details(self):
+        """Detail does not expose idempotency key or conflicting order ID."""
         exc = IdempotencyConflictError(
-            "Idempotency key 'key-123' conflicts with existing order order-1"
+            "Idempotency key 'secret-key-abc' conflicts with existing order order-secret-123"
         )
         http_exc = _handle_service_error(exc)
-        assert "conflicts" in str(http_exc.detail)
+        assert http_exc.detail == "Idempotency conflict"
+        assert "secret-key-abc" not in str(http_exc.detail)
+        assert "order-secret-123" not in str(http_exc.detail)
+        assert "key" not in str(http_exc.detail).lower()
+        assert "conflict" in str(http_exc.detail).lower()
 
     def test_empty_message_uses_default(self):
         """Empty message uses default detail."""
         exc = IdempotencyConflictError("")
         http_exc = _handle_service_error(exc)
         assert http_exc.detail == "Idempotency conflict"
+
+    def test_idempotency_key_absent_from_detail(self):
+        """Client-provided idempotency key must not appear in response."""
+        sentinel_key = "client-secret-idem-key-7f3a1e2c"
+        exc = IdempotencyConflictError(
+            f"Idempotency key '{sentinel_key}' conflicts with existing order order-secret-123"
+        )
+        http_exc = _handle_service_error(exc)
+        assert http_exc.detail == "Idempotency conflict"
+        assert sentinel_key not in str(http_exc.detail)
+
+    def test_conflicting_order_id_absent_from_detail(self):
+        """Existing order ID must not appear in response."""
+        sentinel_order_id = "order-secret-123-abc-def"
+        exc = IdempotencyConflictError(
+            "Idempotency key 'key-abc' conflicts with existing order "
+            f"{sentinel_order_id}"
+        )
+        http_exc = _handle_service_error(exc)
+        assert http_exc.detail == "Idempotency conflict"
+        assert sentinel_order_id not in str(http_exc.detail)
+
+    def test_other_users_info_absent_from_detail(self):
+        """No information about other users must appear in response."""
+        exc = IdempotencyConflictError(
+            "Idempotency key 'key-abc' conflicts with existing order order-secret-123 "
+            "owned by user-secret-456"
+        )
+        http_exc = _handle_service_error(exc)
+        assert http_exc.detail == "Idempotency conflict"
+        assert "user-secret-456" not in str(http_exc.detail)
 
 
 # -----------------------------------------------------------------------
@@ -213,17 +248,50 @@ class TestOrderErrorFallback:
         http_exc = _handle_service_error(exc)
         assert http_exc.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_detail_contains_message(self):
-        """Detail contains the exception message."""
-        exc = OrderError("Some validation error")
+    def test_detail_is_generic(self):
+        """Detail does not expose product IDs, prices, or store IDs."""
+        exc = OrderError(
+            "Invalid quantity for product product-secret-999: 999"
+        )
         http_exc = _handle_service_error(exc)
-        assert http_exc.detail == "Some validation error"
+        assert http_exc.detail == "Order operation failed"
+        assert "product-secret-999" not in str(http_exc.detail)
+        assert "999" not in str(http_exc.detail)
+        assert "quantity" not in str(http_exc.detail).lower()
 
     def test_empty_message_uses_default(self):
         """Empty message uses default detail."""
         exc = OrderError("")
         http_exc = _handle_service_error(exc)
         assert http_exc.detail == "Order operation failed"
+
+    def test_product_id_absent_from_detail(self):
+        """Product ID must not appear in response."""
+        sentinel_product_id = "product-secret-999-abc-def"
+        exc = OrderError(
+            f"Invalid quantity for product {sentinel_product_id}: 999"
+        )
+        http_exc = _handle_service_error(exc)
+        assert http_exc.detail == "Order operation failed"
+        assert sentinel_product_id not in str(http_exc.detail)
+
+    def test_price_absent_from_detail(self):
+        """Price snapshot must not appear in response."""
+        sentinel_price = "29.99"
+        exc = OrderError(
+            f"Invalid price for product product-abc: Decimal('{sentinel_price}')"
+        )
+        http_exc = _handle_service_error(exc)
+        assert http_exc.detail == "Order operation failed"
+        assert sentinel_price not in str(http_exc.detail)
+
+    def test_store_id_absent_from_detail(self):
+        """Store ID must not appear in response."""
+        sentinel_store_id = "store-secret-123-abc"
+        exc = OrderError(f"No seller mapping for store {sentinel_store_id}")
+        http_exc = _handle_service_error(exc)
+        assert http_exc.detail == "Order operation failed"
+        assert sentinel_store_id not in str(http_exc.detail)
 
 
 # -----------------------------------------------------------------------
