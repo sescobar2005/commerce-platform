@@ -78,10 +78,10 @@ def _handle_service_error(exc: OrderError) -> HTTPException:
     if isinstance(exc, IdempotencyConflictError):
         return HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=str(exc) or "Idempotency conflict",
+            detail="Idempotency conflict",
         )
     # Fallback for unexpected OrderError (validation, business rule, etc.)
     return HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
-        detail=str(exc) or "Order operation failed",
+        detail="Order operation failed",
     )
