@@ -13,6 +13,7 @@ from src.core.auth.router import router as auth_router
 from src.core.cart.router import router as cart_router
 from src.core.categories.router import router as categories_router
 from src.core.config import settings
+from src.core.orders.router import router as orders_router
 from src.core.products.router import router as products_router
 from src.core.sellers.router import router as sellers_router
 
@@ -59,6 +60,7 @@ def create_app() -> FastAPI:
     app.include_router(products_router, prefix="/api/v1")
     app.include_router(categories_router, prefix="/api/v1")
     app.include_router(cart_router, prefix="/api/v1")
+    app.include_router(orders_router, prefix="/api/v1")
 
     return app
 
