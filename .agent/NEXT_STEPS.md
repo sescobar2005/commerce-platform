@@ -72,7 +72,7 @@
 - `back/src/core/orders/tests/test_order_repositories_unit.py` — 18/18 passed (15 existing + 4 new)
 - Full suite: 623 passed, 0 failed, 9 skipped (PostgreSQL integration tests skipped)
 
-## Orders Unit 3b.4 — Orders API Router — Commit `47d9fc3`
+## Orders Unit 3b.4 — Orders API Router — Commit `47d9fc3` + Service `19aa3b2` + Router `eb660b2` + Integration `b32bf8a`
 
 ### Completed
 - `back/src/core/orders/router.py` — Orders HTTP router with 5 endpoints:
@@ -86,10 +86,13 @@
 - ORM objects converted to Pydantic response schemas before returning
 - Decimal monetary values serialize as decimal strings
 - Reuses _handle_service_error() for consistent exception-to-HTTP mapping
+- Cart UUID uses UUID type for row-level validation at HTTP layer
 
 ### Test results
 - `back/src/core/orders/tests/test_order_router_unit.py` — 20/20 passed
-- Full suite: 670 passed, 0 failed, 9 skipped (PostgreSQL integration tests skipped)
+- `back/src/core/orders/tests/test_order_service_unit.py` — 22/22 passed (updated for OrderCreationResult)
+- `back/src/core/orders/tests/test_order_router_integration.py` — 14/14 passed
+- Full suite: 343 passed, 0 failed, 9 skipped (PostgreSQL integration tests skipped)
 
 **All Orders Unit 3b work is complete (3b.1 through 3b.4).**
 

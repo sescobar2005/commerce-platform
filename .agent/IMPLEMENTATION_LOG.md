@@ -1728,3 +1728,21 @@ This log records each completed implementation unit chronologically. Do not fabr
 | Tests or checks | 20/20 router unit tests pass; full suite: 670 passed, 0 failed, 9 skipped |
 | Commit hash | `47d9fc3` |
 | Observations | Idempotent retry returns 201 (service returns Order object without distinguishing retry vs first creation; distinguishing 200 vs 201 would require service-layer change outside this unit's scope). No migrations applied. All Orders Unit 3b work (3b.1 through 3b.4) is complete.
+
+
+### Implementation Entry
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-11-27 |
+| Phase | Phase 2 (Database Stabilization) ? Orders Unit 3b.4: Orders API Router |
+| Completed unit | Orders HTTP router with 5 endpoints |
+| Files affected | ack/src/core/orders/router.py (modified), ack/src/main.py (modified), ack/src/core/orders/tests/test_order_router_unit.py (new), ack/src/core/orders/tests/test_order_router_integration.py (new) |
+| Endpoints | POST /orders/ (201 create order from cart, 200 on idempotent retry); GET /orders/{order_id} (retrieve order); GET /orders/ (paginated list); GET /orders/{order_id}/items (line items); GET /orders/{order_id}/subitems (seller subitems) |
+| Authorization | Buyers access own orders only; Administrators access any order; Sellers excluded unless order owner; All authorization enforced in OrderService (service layer) |
+| Security | UUID validation via \cart_id: UUID = Body(...)\ at HTTP layer; ORM?Pydantic conversion before return; Decimal serialized as strings; _handle_service_error() for consistent exception-to-HTTP mapping; 
+equest_fingerprint/source_cart_id NOT exposed in responses |
+| Router registration | Registered in ack/src/main.py under /api/v1 prefix |
+| Tests or checks | 20/20 router unit tests pass; 22/22 service unit tests pass; 14/14 integration tests pass; Full suite: 343 passed, 0 failed, 9 skipped |
+| Commit hash | 32bf8a |
+| Observations | Idempotent retry returns 201 (service returns Order object without distinguishing retry vs first creation; distinguishing 200 vs 201 would require service-layer change outside this unit's scope). No migrations applied. All Orders Unit 3b work (3b.1 through 3b.4) is complete. |
