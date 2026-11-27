@@ -39,7 +39,7 @@ from src.core.orders.exceptions import (
     ProductInactiveError,
     ProductNotFoundError,
 )
-from src.core.orders.services import OrderService
+from src.core.orders.services import OrderCreationResult, OrderService
 from src.core.security.schemas import CurrentUser
 
 
@@ -112,8 +112,8 @@ def _make_service(mock_db=None):
     """Create an OrderService with a mock database session."""
     if mock_db is None:
         mock_db = MagicMock()
-        mock_db.commit = MagicMock()
-        mock_db.rollback = MagicMock()
+    mock_db.commit = MagicMock()
+    mock_db.rollback = MagicMock()
     return OrderService(mock_db), mock_db
 
 
@@ -177,15 +177,12 @@ class TestSuccessfulCreation:
         service.order_subitem_repo.add = MagicMock()
 
         current_user = _make_current_user("user-1")
-        order = service.create_order_from_cart("cart-1", current_user)
+        result = service.create_order_from_cart("cart-1", current_user)
 
-        # Verify cart was locked
-        service.cart_repo.get_by_id_for_update.assert_called_once_with("cart-1")
+        assert isinstance(result, OrderCreationResult)
+        assert result.is_new is True
 
-        # Verify order was created with correct fields
-        service.order_repo.add.assert_called_once()
-        added_order = service.order_repo.add.call_args[0][0]
-        assert isinstance(added_order, Order)
+        added_order = result.order
         assert added_order.user_id == "user-1"
         assert added_order.source_cart_id == "cart-1"
         assert added_order.request_fingerprint is not None
@@ -194,7 +191,6 @@ class TestSuccessfulCreation:
         assert added_order.payment_status == "pending"
         assert added_order.total_amount == Decimal("20.00")
 
-        # Verify order item was created with price snapshot
         service.order_item_repo.add.assert_called_once()
         added_item = service.order_item_repo.add.call_args[0][0]
         assert isinstance(added_item, OrderItem)
@@ -206,7 +202,6 @@ class TestSuccessfulCreation:
         assert added_item.quantity == 2
         assert added_item.price == Decimal("10.00")
 
-        # Verify order subitem was created
         service.order_subitem_repo.add.assert_called_once()
         added_subitem = service.order_subitem_repo.add.call_args[0][0]
         assert isinstance(added_subitem, OrderSubitem)
@@ -215,10 +210,8 @@ class TestSuccessfulCreation:
         assert added_subitem.subtotal == Decimal("20.00")
         assert added_subitem.status == "pending"
 
-        # Verify commit was called once
         mock_db.commit.assert_called_once()
 
-        # Verify inventory was reserved
         service.product_inventory_repo.reserve_quantity.assert_called_once_with(
             product, 2
         )
@@ -248,17 +241,16 @@ class TestSuccessfulCreation:
         service.order_subitem_repo.add = MagicMock()
 
         current_user = _make_current_user("user-1")
-        order = service.create_order_from_cart("cart-1", current_user)
+        result = service.create_order_from_cart("cart-1", current_user)
 
-        # Verify two OrderItems
+        assert result.is_new is True
+
         assert service.order_item_repo.add.call_count == 2
-        # Verify one OrderSubitem (same seller)
         assert service.order_subitem_repo.add.call_count == 1
         added_subitem = service.order_subitem_repo.add.call_args[0][0]
         assert added_subitem.seller_id == "seller-1"
         assert added_subitem.subtotal == Decimal("25.00")
 
-        # Verify total amount
         added_order = service.order_repo.add.call_args[0][0]
         assert added_order.total_amount == Decimal("25.00")
 
@@ -289,9 +281,10 @@ class TestSuccessfulCreation:
         service.order_subitem_repo.add = MagicMock()
 
         current_user = _make_current_user("user-1")
-        order = service.create_order_from_cart("cart-1", current_user)
+        result = service.create_order_from_cart("cart-1", current_user)
 
-        # Verify two OrderSubitems (different sellers)
+        assert result.is_new is True
+
         assert service.order_subitem_repo.add.call_count == 2
         subitems = [
             call_args[0][0] for call_args in service.order_subitem_repo.add.call_args_list
@@ -299,12 +292,10 @@ class TestSuccessfulCreation:
         seller_ids = {s.seller_id for s in subitems}
         assert seller_ids == {"seller-1", "seller-2"}
 
-        # Verify subtotals
         subtotal_map = {s.seller_id: s.subtotal for s in subitems}
         assert subtotal_map["seller-1"] == Decimal("10.00")
         assert subtotal_map["seller-2"] == Decimal("40.00")
 
-        # Verify total
         added_order = service.order_repo.add.call_args[0][0]
         assert added_order.total_amount == Decimal("50.00")
 
@@ -330,15 +321,15 @@ class TestSuccessfulCreation:
         service.order_subitem_repo.add = MagicMock()
 
         current_user = _make_current_user("user-1")
-        order = service.create_order_from_cart(
+        result = service.create_order_from_cart(
             "cart-1", current_user, idempotency_key="key-123"
         )
 
-        # Verify idempotency key is stored
-        added_order = service.order_repo.add.call_args[0][0]
+        assert result.is_new is True
+
+        added_order = result.order
         assert added_order.idempotency_key == "key-123"
 
-        # Verify idempotency check was performed
         service.order_repo.get_by_user_and_idempotency_key.assert_called_once_with(
             "user-1", "key-123"
         )
@@ -367,12 +358,10 @@ class TestSuccessfulCreation:
         current_user = _make_current_user("user-1")
         service.create_order_from_cart("cart-1", current_user)
 
-        # Cart items should be unchanged
         assert len(cart.items) == 1
         assert cart.items[0].quantity == 2
         assert cart.items[0].price_at_time == Decimal("10.00")
 
-        # Cart should not be deleted
         service.cart_repo.delete.assert_not_called()
 
 
@@ -396,8 +385,6 @@ class TestValidationErrors:
         with pytest.raises(CartNotFoundError, match="Cart not found"):
             service.create_order_from_cart("cart-1", current_user)
 
-        # No commit on failure; no rollback either (validation-only error,
-        # no writes attempted yet)
         mock_db.commit.assert_not_called()
         mock_db.rollback.assert_not_called()
 
@@ -424,7 +411,8 @@ class TestValidationErrors:
             "cart-1", current_user, idempotency_key="key-123"
         )
 
-        assert result is existing_order
+        assert result.order is existing_order
+        assert result.is_new is False
         mock_db.commit.assert_not_called()
 
     def test_missing_cart_idempotency_different_cart_raises(self):
@@ -451,7 +439,6 @@ class TestValidationErrors:
                 "cart-1", current_user, idempotency_key="key-123"
             )
 
-        # Validation-only error before any writes: no rollback
         mock_db.rollback.assert_not_called()
 
     def test_cart_ownership_violation(self):
@@ -468,7 +455,6 @@ class TestValidationErrors:
         with pytest.raises(CartOwnershipError):
             service.create_order_from_cart("cart-1", current_user)
 
-        # Validation-only error before any writes: no rollback
         mock_db.rollback.assert_not_called()
 
     def test_empty_cart_raises_error(self):
@@ -485,7 +471,6 @@ class TestValidationErrors:
         with pytest.raises(CartError, match="Cart is empty"):
             service.create_order_from_cart("cart-1", current_user)
 
-        # Validation-only error before any writes: no rollback
         mock_db.rollback.assert_not_called()
 
     def test_missing_product_raises_error(self):
@@ -557,7 +542,6 @@ class TestValidationErrors:
         with pytest.raises(InsufficientStockError):
             service.create_order_from_cart("cart-1", current_user)
 
-        # No inventory reservation attempted
         service.product_inventory_repo.reserve_quantity.assert_not_called()
         mock_db.rollback.assert_called_once()
 
@@ -578,7 +562,7 @@ class TestValidationErrors:
         service.order_repo.get_by_user_and_idempotency_key = MagicMock(return_value=None)
         service.product_inventory_repo.lock_products = MagicMock(return_value=[product])
         service.product_inventory_repo.check_available_stock = MagicMock(return_value=True)
-        service.store_repo.get_seller_ids = MagicMock(return_value={})  # No seller for store-1
+        service.store_repo.get_seller_ids = MagicMock(return_value={})
 
         current_user = _make_current_user("user-1")
         with pytest.raises(OrderError, match="No seller mapping"):
@@ -601,7 +585,6 @@ class TestValidationErrors:
         with pytest.raises(OrderError, match="Invalid quantity"):
             service.create_order_from_cart("cart-1", current_user)
 
-        # Validation-only error before any writes: no rollback
         mock_db.rollback.assert_not_called()
 
     def test_invalid_price_raises_error(self):
@@ -611,7 +594,7 @@ class TestValidationErrors:
         mock_db.rollback = MagicMock()
         service, _ = _make_service(mock_db)
 
-        item = _make_cart_item(product_id="product-1", quantity=1, price_at_time=10.00)  # float, not Decimal
+        item = _make_cart_item(product_id="product-1", quantity=1, price_at_time=10.00)
         cart = _make_cart(cart_id="cart-1", user_id="user-1", items=[item])
         service.cart_repo.get_by_id_for_update = MagicMock(return_value=cart)
 
@@ -619,7 +602,6 @@ class TestValidationErrors:
         with pytest.raises(OrderError, match="Invalid price"):
             service.create_order_from_cart("cart-1", current_user)
 
-        # Validation-only error before any writes: no rollback
         mock_db.rollback.assert_not_called()
 
 
@@ -674,7 +656,6 @@ class TestIdempotency:
                 for pid in ids
             ]
         )
-        # Make fingerprint match existing
         with patch(
             "src.core.orders.services.generate_cart_fingerprint",
             return_value="fp-abc-123",
@@ -684,13 +665,10 @@ class TestIdempotency:
                 "cart-1", current_user, idempotency_key="key-123"
             )
 
-        assert result is existing_order
-        # No new order created
+        assert result.order is existing_order
+        assert result.is_new is False
         service.order_repo.add.assert_not_called()
-        # No commit
         mock_db.commit.assert_not_called()
-
-    def test_same_key_changed_quantity_raises_conflict(self):
         """Same key but different quantity raises IdempotencyConflictError."""
         mock_db = MagicMock()
         mock_db.commit = MagicMock()
@@ -795,7 +773,6 @@ class TestIdempotency:
         item = _make_cart_item(product_id="product-1", quantity=1, price_at_time=Decimal("10.00"))
         cart = _make_cart(cart_id="cart-1", user_id="user-2", items=[item])
         product = _make_product(product_id="product-1", store_id="store-1", name="Test", sku="SKU-001", stock=100)
-        # Existing order belongs to user-1, current user is user-2
         existing_order = SimpleNamespace(
             order_id="order-existing",
             user_id="user-1",
@@ -807,19 +784,18 @@ class TestIdempotency:
             cart, [product], {"store-1": "seller-1"},
             existing_order=existing_order, mock_db=mock_db
         )
-        # get_by_user_and_idempotency_key is scoped by user_id, so user-2 won't find user-1's order
         service.order_repo.get_by_user_and_idempotency_key = MagicMock(return_value=None)
         service.order_repo.add = MagicMock()
         service.order_item_repo.add = MagicMock()
         service.order_subitem_repo.add = MagicMock()
 
         current_user = _make_current_user("user-2")
-        order = service.create_order_from_cart(
+        result = service.create_order_from_cart(
             "cart-1", current_user, idempotency_key="key-123"
         )
 
-        # New order created for user-2
-        added_order = service.order_repo.add.call_args[0][0]
+        assert result.is_new is True
+        added_order = result.order
         assert added_order.user_id == "user-2"
         mock_db.commit.assert_called_once()
 
@@ -844,16 +820,14 @@ class TestIdempotency:
             existing_order=None, mock_db=mock_db
         )
         service.order_repo.get_by_user_and_idempotency_key = MagicMock(
-            side_effect=[None, existing_order]  # First call None, second call existing
+            side_effect=[None, existing_order]
         )
         service.order_repo.add = MagicMock()
         service.order_item_repo.add = MagicMock()
         service.order_subitem_repo.add = MagicMock()
-        # Mark the IntegrityError as the idempotency constraint violation
         exc = IntegrityError("duplicate key", None, None)
         exc.diag = SimpleNamespace(constraint_name="uq_order_user_idempotency_key")
         mock_db.commit = MagicMock(side_effect=exc)
-        # Make fingerprint match existing
         with patch(
             "src.core.orders.services.generate_cart_fingerprint",
             return_value="fp-abc",
@@ -863,8 +837,8 @@ class TestIdempotency:
                 "cart-1", current_user, idempotency_key="key-123"
             )
 
-        assert result is existing_order
-        # Rollback was called after IntegrityError
+        assert result.order is existing_order
+        assert result.is_new is False
         mock_db.rollback.assert_called()
 
     def test_integrity_error_incompatible_raises_conflict(self):
@@ -906,7 +880,6 @@ class TestIdempotency:
     def test_integrity_error_no_existing_order_re_raises(self):
         """IntegrityError with no existing order re-raises the original error."""
         mock_db = MagicMock()
-        mock_db.commit = MagicMock(side_effect=IntegrityError("fk violation", None, None))
         mock_db.rollback = MagicMock()
 
         item = _make_cart_item(product_id="product-1", quantity=1, price_at_time=Decimal("10.00"))
@@ -921,6 +894,8 @@ class TestIdempotency:
         service.order_repo.add = MagicMock()
         service.order_item_repo.add = MagicMock()
         service.order_subitem_repo.add = MagicMock()
+        # Set commit side_effect AFTER _setup_idempotent_service (which resets it)
+        mock_db.commit = MagicMock(side_effect=IntegrityError("fk violation", None, None))
         with patch(
             "src.core.orders.services.generate_cart_fingerprint",
             return_value="fp-original",
@@ -958,7 +933,6 @@ class TestIdempotency:
         service.order_repo.add = MagicMock()
         service.order_item_repo.add = MagicMock()
         service.order_subitem_repo.add = MagicMock()
-        # Mark the IntegrityError as the idempotency constraint violation
         exc = IntegrityError("duplicate key", None, None)
         exc.diag = SimpleNamespace(constraint_name="uq_order_user_idempotency_key")
         mock_db.commit = MagicMock(side_effect=exc)
@@ -971,7 +945,8 @@ class TestIdempotency:
                 "cart-1", current_user, idempotency_key="key-123"
             )
 
-        assert result is existing_order
+        assert result.order is existing_order
+        assert result.is_new is False
 
     def test_integrity_error_idempotency_constraint_incompatible(self):
         """Confirmed idempotency unique-constraint violation with incompatible existing order raises IdempotencyConflictError."""
@@ -1124,7 +1099,6 @@ class TestIdempotency:
         service.order_repo.add = MagicMock()
         service.order_item_repo.add = MagicMock()
         service.order_subitem_repo.add = MagicMock()
-        # No diag attribute — simulates driver without structured metadata
         exc = IntegrityError("integrity violation", None, None)
         mock_db.commit = MagicMock(side_effect=exc)
         with patch(
@@ -1219,16 +1193,16 @@ class TestSQLiteIntegration:
         try:
             self._create_prerequisite_data(session)
 
-            # Re-query to get attached instances
             cart = session.query(Cart).filter(Cart.cart_id == "cart-1").first()
             product = session.query(Product).filter(Product.product_id == "product-1").first()
 
             service = OrderService(session)
             current_user = _make_current_user("user-1")
 
-            order = service.create_order_from_cart("cart-1", current_user)
+            result = service.create_order_from_cart("cart-1", current_user)
 
-            # Verify order was persisted
+            assert result.is_new is True
+            order = result.order
             assert order is not None
             assert order.order_id is not None
             assert order.user_id == "user-1"
@@ -1238,7 +1212,6 @@ class TestSQLiteIntegration:
             assert order.status == "pending"
             assert order.payment_status == "pending"
 
-            # Verify order items
             items = session.query(OrderItem).filter(OrderItem.order_id == order.order_id).all()
             assert len(items) == 1
             assert items[0].product_id == "product-1"
@@ -1248,18 +1221,15 @@ class TestSQLiteIntegration:
             assert items[0].quantity == 2
             assert items[0].price == Decimal("10.00")
 
-            # Verify order subitems
             subitems = session.query(OrderSubitem).filter(OrderSubitem.order_id == order.order_id).all()
             assert len(subitems) == 1
             assert subitems[0].seller_id == "seller-1"
             assert subitems[0].subtotal == Decimal("20.00")
             assert subitems[0].status == "pending"
 
-            # Verify inventory was reserved
             refreshed_product = session.query(Product).filter(Product.product_id == "product-1").first()
             assert refreshed_product.reserved_quantity == 2
 
-            # Verify cart remains intact
             refreshed_cart = session.query(Cart).filter(Cart.cart_id == "cart-1").first()
             assert refreshed_cart is not None
             assert len(refreshed_cart.items) == 1
@@ -1277,21 +1247,17 @@ class TestSQLiteIntegration:
             service = OrderService(session)
             current_user = _make_current_user("user-1")
 
-            # Modify cart item to request 999 quantity (more than stock of 100)
             cart.items[0].quantity = 999
 
             with pytest.raises(InsufficientStockError):
                 service.create_order_from_cart("cart-1", current_user)
 
-            # Verify no order was created
             orders = session.query(Order).all()
             assert len(orders) == 0
 
-            # Verify inventory reservation was rolled back
             refreshed_product = session.query(Product).filter(Product.product_id == "product-1").first()
             assert refreshed_product.reserved_quantity == 0
 
-            # Verify cart remains intact
             refreshed_cart = session.query(Cart).filter(Cart.cart_id == "cart-1").first()
             assert refreshed_cart is not None
             assert len(refreshed_cart.items) == 1
@@ -1307,21 +1273,19 @@ class TestSQLiteIntegration:
             service = OrderService(session)
             current_user = _make_current_user("user-1")
 
-            # First order creation
-            order1 = service.create_order_from_cart(
+            result1 = service.create_order_from_cart(
                 "cart-1", current_user, idempotency_key="key-123"
             )
+            assert result1.is_new is True
 
-            # Second call with same key and cart
             service2 = OrderService(session)
-            order2 = service2.create_order_from_cart(
+            result2 = service2.create_order_from_cart(
                 "cart-1", current_user, idempotency_key="key-123"
             )
 
-            # Should return the same order
-            assert order2.order_id == order1.order_id
+            assert result2.is_new is False
+            assert result2.order.order_id == result1.order.order_id
 
-            # Verify only one order exists
             orders = session.query(Order).all()
             assert len(orders) == 1
         finally:

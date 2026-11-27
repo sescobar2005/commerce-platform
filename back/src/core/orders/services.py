@@ -8,6 +8,7 @@ The service owns the transaction boundary. Repositories do NOT
 commit, roll back, or refresh.
 """
 
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import Optional
 from uuid import uuid4
@@ -44,6 +45,21 @@ from src.core.orders.repositories import (
 from src.core.security.schemas import CurrentUser
 
 
+@dataclass(frozen=True)
+class OrderCreationResult:
+    """Result of order creation from a cart.
+
+    Attributes:
+        order: The resulting Order ORM instance.
+        is_new: True if the order was newly created by the current
+            request; False if an existing compatible order was returned
+            due to idempotency (same user, key, cart, and fingerprint).
+    """
+
+    order: Order
+    is_new: bool
+
+
 class OrderService:
     """Service for order creation from cart.
 
@@ -71,7 +87,7 @@ class OrderService:
         cart_id: str,
         current_user: CurrentUser,
         idempotency_key: Optional[str] = None,
-    ) -> Order:
+    ) -> OrderCreationResult:
         """Create an order from a cart.
 
         Implements the full transactional order creation flow:
@@ -126,7 +142,9 @@ class OrderService:
                     existing is not None
                     and existing.source_cart_id == cart_id
                 ):
-                    return existing
+                    return OrderCreationResult(
+                        order=existing, is_new=False
+                    )
             raise CartNotFoundError(cart_id)
 
         # Revalidate ownership after acquiring the lock
@@ -170,7 +188,9 @@ class OrderService:
                         existing.source_cart_id == saved_cart_id
                         and existing.request_fingerprint == saved_fingerprint
                     ):
-                        return existing
+                        return OrderCreationResult(
+                            order=existing, is_new=False
+                        )
                     raise IdempotencyConflictError(
                         f"Idempotency key '{idempotency_key}' conflicts "
                         f"with existing order {existing.order_id}"
@@ -283,7 +303,7 @@ class OrderService:
 
             # Step 14: Commit once
             self.db.commit()
-            return order
+            return OrderCreationResult(order=order, is_new=True)
 
         except IntegrityError as exc:
             self.db.rollback()
@@ -302,7 +322,9 @@ class OrderService:
                         and existing.request_fingerprint
                         == saved_fingerprint
                     ):
-                        return existing
+                        return OrderCreationResult(
+                            order=existing, is_new=False
+                        )
                     raise IdempotencyConflictError(
                         f"Idempotency key '{idempotency_key}' conflicts "
                         f"with existing order {existing.order_id}"
